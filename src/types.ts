@@ -133,6 +133,34 @@ export interface DayLog {
   notes: string | null;
 }
 
+/** One calendar day of activity — the source for the streak and the heatmap. */
+export interface DayRecord {
+  id: string;
+  userId: string;
+  date: string; // yyyy-mm-dd
+  completed: number;
+  total: number;
+  goalMet: boolean;
+  xpEarned: number;
+  /** True when a streak freeze covered this day rather than real work. */
+  frozen: boolean;
+}
+
+/** Global daily-goal streak, distinct from a single habit's own run. */
+export interface StreakState {
+  userId: string;
+  current: number;
+  best: number;
+  lastGoalDate: string | null;
+  freezes: number;
+}
+
+export interface UnlockedAchievement {
+  userId: string;
+  achievementId: string;
+  unlockedAt: string;
+}
+
 export interface Wallet {
   userId: string;
   coins: number;

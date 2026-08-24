@@ -10,7 +10,9 @@ import { STAT_SHORT, statFill, statInk } from '../../types';
 const navItems: { to: string; label: string; icon: IconName }[] = [
   { to: '/', label: 'Today', icon: 'check' },
   { to: '/quests', label: 'Quests', icon: 'map' },
-  { to: '/character', label: 'Character', icon: 'grid' },
+  { to: '/calendar', label: 'Streak', icon: 'flame' },
+  { to: '/rewards', label: 'Rewards', icon: 'star' },
+  { to: '/character', label: 'Stats', icon: 'grid' },
 ];
 
 function useBump(value: number) {
@@ -41,10 +43,27 @@ function Wordmark() {
   );
 }
 
-function LevelCoins({ level, coinBump, coins }: { level: number; coinBump: boolean; coins: number }) {
+function LevelCoins({
+  level,
+  coinBump,
+  coins,
+  streak,
+}: {
+  level: number;
+  coinBump: boolean;
+  coins: number;
+  streak: number;
+}) {
   return (
     <div className="flex items-center gap-2">
-      <span className="rounded-full border-2 border-border bg-white px-2.5 py-1 font-heading text-xs font-extrabold text-text-secondary tabular-nums">
+      <span
+        className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-white"
+        style={{ background: streak > 0 ? 'var(--accent)' : 'var(--text-tertiary)' }}
+      >
+        <Icon name="flame" width={14} height={14} />
+        <span className="font-heading text-xs font-extrabold tabular-nums">{streak}</span>
+      </span>
+      <span className="hidden rounded-full border-2 border-border bg-white px-2.5 py-1 font-heading text-xs font-extrabold text-text-secondary tabular-nums sm:inline">
         Lv {level}
       </span>
       <motion.span
@@ -65,6 +84,7 @@ export function AppShell() {
   const wallet = useAppStore((s) => s.wallet);
   const level = characterLevel(stats);
   const coinBump = useBump(wallet.coins);
+  const streakState = useAppStore((s) => s.streakState);
 
   return (
     <div className="min-h-svh text-text">
@@ -142,7 +162,12 @@ export function AppShell() {
                 Character sheet for your life
               </p>
             </div>
-            <LevelCoins level={level} coinBump={coinBump} coins={wallet.coins} />
+            <LevelCoins
+              level={level}
+              coinBump={coinBump}
+              coins={wallet.coins}
+              streak={streakState.current}
+            />
           </div>
         </header>
 
@@ -160,7 +185,7 @@ export function AppShell() {
               to={item.to}
               end={item.to === '/'}
               className={({ isActive }) =>
-                `relative flex flex-1 flex-col items-center gap-1 py-3 text-[11px] font-medium transition-colors ${
+                `relative flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[10px] font-extrabold transition-colors ${
                   isActive ? 'text-[color:var(--accent-ink)]' : 'text-text-secondary hover:text-text'
                 }`
               }
@@ -170,10 +195,10 @@ export function AppShell() {
                   {isActive && (
                     <motion.span
                       layoutId="nav-active"
-                      className="absolute inset-x-5 top-0 h-1 rounded-full bg-[color:var(--accent)]"
+                      className="absolute inset-x-3 top-0 h-1 rounded-full bg-[color:var(--accent)]"
                     />
                   )}
-                  <Icon name={item.icon} width={20} height={20} />
+                  <Icon name={item.icon} width={19} height={19} />
                   <span>{item.label}</span>
                 </>
               )}

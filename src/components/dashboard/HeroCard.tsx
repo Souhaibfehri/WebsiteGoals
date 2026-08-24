@@ -1,8 +1,9 @@
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { useAppStore } from '../../store/useAppStore';
 import { Mascot } from '../art/Mascot';
 import { Icon } from '../common/Icon';
 import { characterLevel } from '../../lib/derived';
+import { WeekStrip } from '../calendar/WeekStrip';
 
 function greeting(): string {
   const h = new Date().getHours();
@@ -25,6 +26,8 @@ export function HeroCard({
   bestStreak: number;
 }) {
   const stats = useAppStore((s) => s.stats);
+  const dayRecords = useAppStore((s) => s.dayRecords);
+  const reduceMotion = useReducedMotion();
   const level = characterLevel(stats);
   const left = Math.max(0, totalToday - doneToday);
   const allDone = totalToday > 0 && left === 0;
@@ -38,8 +41,8 @@ export function HeroCard({
       <div className="flex items-center gap-4">
         <motion.div
           className="shrink-0"
-          animate={allDone ? { rotate: [0, -6, 6, 0] } : { y: [0, -5, 0] }}
-          transition={{ duration: allDone ? 0.9 : 2.6, repeat: Infinity, ease: 'easeInOut' }}
+          animate={reduceMotion ? {} : allDone ? { rotate: [0, -6, 6, 0] } : { y: [0, -5, 0] }}
+          transition={{ duration: allDone ? 0.9 : 2.6, repeat: reduceMotion ? 0 : Infinity, ease: 'easeInOut' }}
         >
           <Mascot size={96} mood={allDone ? 'cheer' : 'happy'} />
         </motion.div>
@@ -77,6 +80,10 @@ export function HeroCard({
             </span>
           </div>
         </div>
+      </div>
+
+      <div className="mt-4">
+        <WeekStrip records={dayRecords} />
       </div>
 
       <div className="mt-4">

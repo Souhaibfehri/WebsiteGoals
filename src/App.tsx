@@ -7,9 +7,12 @@ import { AppShell } from './components/layout/AppShell';
 import { DashboardPage } from './pages/DashboardPage';
 import { QuestsPage } from './pages/QuestsPage';
 import { CharacterSheetPage } from './pages/CharacterSheetPage';
+import { CalendarPage } from './pages/CalendarPage';
+import { RewardsPage } from './pages/RewardsPage';
 import { LevelUpCelebration } from './components/common/LevelUpCelebration';
 import { QuestCompleteToast } from './components/common/QuestCompleteToast';
 import { CheckpointToast } from './components/common/CheckpointToast';
+import { StreakCelebration, AchievementToast } from './components/common/StreakCelebration';
 import { useAppStore } from './store/useAppStore';
 
 function App() {
@@ -36,6 +39,8 @@ function App() {
         <Route element={<AppShell />}>
           <Route path="/" element={<DashboardPage />} />
           <Route path="/quests" element={<QuestsPage />} />
+          <Route path="/calendar" element={<CalendarPage />} />
+          <Route path="/rewards" element={<RewardsPage />} />
           <Route path="/character" element={<CharacterSheetPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
@@ -43,6 +48,8 @@ function App() {
       <LevelUpCelebration />
       <QuestCompleteToast />
       <CheckpointToast />
+      <StreakCelebration />
+      <AchievementToast />
     </HashRouter>
   );
 }

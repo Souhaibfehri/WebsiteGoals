@@ -1,6 +1,9 @@
 import type {
   Checkpoint,
   DayLog,
+  DayRecord,
+  StreakState,
+  UnlockedAchievement,
   Goal,
   GoalLog,
   LedgerEntry,
@@ -37,6 +40,15 @@ export interface Repository {
 
   getLedger(): Promise<LedgerEntry[]>;
   addLedgerEntry(entry: Omit<LedgerEntry, 'id' | 'userId'>): Promise<LedgerEntry>;
+
+  getDayRecords(): Promise<DayRecord[]>;
+  upsertDayRecord(record: Omit<DayRecord, 'id' | 'userId'>): Promise<DayRecord>;
+
+  getStreakState(): Promise<StreakState>;
+  saveStreakState(patch: Partial<Omit<StreakState, 'userId'>>): Promise<StreakState>;
+
+  getAchievements(): Promise<UnlockedAchievement[]>;
+  unlockAchievement(id: string): Promise<UnlockedAchievement>;
 
   getStreaks(): Promise<Streak[]>;
   upsertStreak(streak: Streak): Promise<Streak>;

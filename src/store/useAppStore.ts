@@ -4,8 +4,14 @@ import { todayIso, daysBetween } from '../lib/date';
 import { coinsForXp, levelFromXp, xpForCompletion } from '../lib/xp';
 import { questToggleXp } from '../lib/quest';
 import { applyTargetDelta } from '../lib/target';
+import { advanceStreak, streakMilestoneReached } from '../lib/streak';
+import { newlyUnlocked, type AchievementSnapshot } from '../lib/achievements';
+import { characterLevel } from '../lib/derived';
 import type {
   Checkpoint,
+  DayRecord,
+  StreakState,
+  UnlockedAchievement,
   Goal,
   LedgerEntry,
   QuestStep,
@@ -14,6 +20,8 @@ import type {
   Streak,
   Wallet,
 } from '../types';
+
+export const STREAK_FREEZE_COST = 50;
 
 export interface LevelUpEvent {
   id: string;
@@ -24,6 +32,15 @@ export interface LevelUpEvent {
 export interface QuestDoneEvent {
   id: string;
   title: string;
+}
+
+export interface StreakEvent {
+  days: number;
+  saved: boolean;
+}
+
+export interface AchievementEvent {
+  ids: string[];
 }
 
 export interface CheckpointEvent {
@@ -41,11 +58,16 @@ interface AppState {
   questSteps: QuestStep[];
   checkpoints: Checkpoint[];
   ledger: LedgerEntry[];
+  dayRecords: DayRecord[];
+  streakState: StreakState;
+  achievements: UnlockedAchievement[];
   streaks: Streak[];
   wallet: Wallet;
   levelUpQueue: LevelUpEvent[];
   questDone: QuestDoneEvent | null;
   checkpointHit: CheckpointEvent | null;
+  streakHit: StreakEvent | null;
+  achievementHit: AchievementEvent | null;
 
   init: () => Promise<void>;
   completeHabit: (goalId: string) => Promise<void>;
@@ -60,20 +82,38 @@ interface AppState {
   dismissLevelUp: (id: string) => void;
   dismissQuestDone: () => void;
   dismissCheckpoint: () => void;
+  dismissStreak: () => void;
+  dismissAchievement: () => void;
+  buyStreakFreeze: () => Promise<void>;
   resetAll: () => Promise<void>;
 }
 
 async function refresh(set: (partial: Partial<AppState>) => void) {
-  const [stats, goals, questSteps, checkpoints, ledger, streaks, wallet] = await Promise.all([
-    repository.getStats(),
-    repository.getGoals(),
-    repository.getQuestSteps(),
-    repository.getCheckpoints(),
-    repository.getLedger(),
-    repository.getStreaks(),
-    repository.getWallet(),
-  ]);
-  set({ stats, goals, questSteps, checkpoints, ledger, streaks, wallet });
+  const [stats, goals, questSteps, checkpoints, ledger, streaks, wallet, dayRecords, streakState, achievements] =
+    await Promise.all([
+      repository.getStats(),
+      repository.getGoals(),
+      repository.getQuestSteps(),
+      repository.getCheckpoints(),
+      repository.getLedger(),
+      repository.getStreaks(),
+      repository.getWallet(),
+      repository.getDayRecords(),
+      repository.getStreakState(),
+      repository.getAchievements(),
+    ]);
+  set({
+    stats,
+    goals,
+    questSteps,
+    checkpoints,
+    ledger,
+    streaks,
+    wallet,
+    dayRecords,
+    streakState,
+    achievements,
+  });
 }
 
 /**
@@ -100,6 +140,106 @@ async function awardXp(
   return null;
 }
 
+/**
+ * Recomputes today's day record, advances the daily streak when the goal is met,
+ * and unlocks any achievement the new state satisfies. Called after every action
+ * that earns XP, so the calendar, streak and badges can never drift from the
+ * underlying logs.
+ */
+async function syncDay(
+  get: () => AppState,
+  xpJustEarned: number
+): Promise<{ streakEvent: StreakEvent | null; achievementIds: string[] }> {
+  const { goals, streaks, stats, questSteps, checkpoints, dayRecords, streakState, achievements } =
+    get();
+  const today = todayIso();
+
+  const habits = goals.filter((g) => g.type === 'habit' && g.active);
+  const completed = habits.filter(
+    (h) => streaks.find((s) => s.goalId === h.id)?.lastCompletedDate === today
+  ).length;
+  const total = habits.length;
+  const goalMet = total > 0 && completed >= total;
+
+  const existingToday = dayRecords.find((d) => d.date === today);
+  await repository.upsertDayRecord({
+    date: today,
+    completed,
+    total,
+    goalMet,
+    xpEarned: (existingToday?.xpEarned ?? 0) + Math.max(0, xpJustEarned),
+    frozen: existingToday?.frozen ?? false,
+  });
+
+  let streakEvent: StreakEvent | null = null;
+  let nextStreak = streakState;
+
+  // The streak only moves the first time a day's goal is fully met.
+  if (goalMet && streakState.lastGoalDate !== today) {
+    const result = advanceStreak({
+      current: streakState.current,
+      best: streakState.best,
+      lastGoalDate: streakState.lastGoalDate,
+      freezes: streakState.freezes,
+      today,
+    });
+    nextStreak = await repository.saveStreakState({
+      current: result.current,
+      best: result.best,
+      lastGoalDate: result.lastGoalDate,
+      freezes: result.freezes,
+    });
+
+    // Mark the bridged days so the calendar shows why the run survived.
+    for (const date of result.frozenDates) {
+      const prior = dayRecords.find((d) => d.date === date);
+      await repository.upsertDayRecord({
+        date,
+        completed: prior?.completed ?? 0,
+        total: prior?.total ?? total,
+        goalMet: false,
+        xpEarned: prior?.xpEarned ?? 0,
+        frozen: true,
+      });
+    }
+
+    const milestone = streakMilestoneReached(streakState.current, result.current);
+    if (milestone || result.saved) {
+      streakEvent = { days: result.current, saved: result.saved };
+    }
+  }
+
+  const snapshot: AchievementSnapshot = {
+    totalXp: stats.reduce((sum, st) => sum + st.currentXp, 0),
+    characterLevel: characterLevel(stats),
+    currentStreak: nextStreak.current,
+    bestStreak: nextStreak.best,
+    habitCompletions: streaks.length,
+    questStepsDone: questSteps.filter((q) => q.done).length,
+    questsCompleted: goals.filter((g) => {
+      if (g.type !== 'quest') return false;
+      const steps = questSteps.filter((q) => q.goalId === g.id);
+      return steps.length > 0 && steps.every((q) => q.done);
+    }).length,
+    milestonesBanked: checkpoints.filter((c) => c.reached).length,
+    totalBanked: goals
+      .filter((g) => g.type === 'milestone')
+      .reduce((sum, g) => sum + g.currentValue, 0),
+    countriesStarted: new Set(
+      goals.filter((g) => g.type === 'quest' && g.location).map((g) => g.location)
+    ).size,
+    daysActive: dayRecords.length,
+  };
+
+  const ids = newlyUnlocked(
+    snapshot,
+    achievements.map((a) => a.achievementId)
+  );
+  for (const id of ids) await repository.unlockAchievement(id);
+
+  return { streakEvent, achievementIds: ids };
+}
+
 export const useAppStore = create<AppState>((set, get) => ({
   loading: true,
   stats: [],
@@ -107,11 +247,16 @@ export const useAppStore = create<AppState>((set, get) => ({
   questSteps: [],
   checkpoints: [],
   ledger: [],
+  dayRecords: [],
+  streakState: { userId: 'local-user', current: 0, best: 0, lastGoalDate: null, freezes: 0 },
+  achievements: [],
   streaks: [],
   wallet: { userId: 'local-user', coins: 0 },
   levelUpQueue: [],
   questDone: null,
   checkpointHit: null,
+  streakHit: null,
+  achievementHit: null,
 
   init: async () => {
     set({ loading: true });
@@ -145,7 +290,12 @@ export const useAppStore = create<AppState>((set, get) => ({
     const levelUp = await awardXp(goal.statId, xpAwarded, stats, wallet);
 
     await refresh(set);
+    const { streakEvent, achievementIds } = await syncDay(get, xpAwarded);
+    await refresh(set);
+
     if (levelUp) set({ levelUpQueue: [...get().levelUpQueue, levelUp] });
+    if (streakEvent) set({ streakHit: streakEvent });
+    if (achievementIds.length) set({ achievementHit: { ids: achievementIds } });
   },
 
   logMilestoneValue: async (goalId: string, newValue: number) => {
@@ -282,10 +432,14 @@ export const useAppStore = create<AppState>((set, get) => ({
     const levelUp = await awardXp(goal.statId, xpDelta, stats, wallet);
     await refresh(set);
 
+    const { achievementIds } = await syncDay(get, Math.max(0, xpDelta));
+    await refresh(set);
+
     if (levelUp) set({ levelUpQueue: [...get().levelUpQueue, levelUp] });
     if (questJustCompleted) {
       set({ questDone: { id: goal.id, title: goal.title } });
     }
+    if (achievementIds.length) set({ achievementHit: { ids: achievementIds } });
   },
 
   addGoal: async (goal, stepTitles) => {
@@ -376,6 +530,18 @@ export const useAppStore = create<AppState>((set, get) => ({
   dismissQuestDone: () => set({ questDone: null }),
 
   dismissCheckpoint: () => set({ checkpointHit: null }),
+
+  dismissStreak: () => set({ streakHit: null }),
+
+  dismissAchievement: () => set({ achievementHit: null }),
+
+  buyStreakFreeze: async () => {
+    const { wallet, streakState } = get();
+    if (wallet.coins < STREAK_FREEZE_COST) return;
+    await repository.updateWallet(wallet.coins - STREAK_FREEZE_COST);
+    await repository.saveStreakState({ freezes: streakState.freezes + 1 });
+    await refresh(set);
+  },
 
   resetAll: async () => {
     await repository.resetToSeed();

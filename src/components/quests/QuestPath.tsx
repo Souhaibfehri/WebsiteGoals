@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { useAppStore } from '../../store/useAppStore';
 import { playCompleteChime } from '../../lib/sound';
 import { Icon } from '../common/Icon';
@@ -20,6 +20,8 @@ export function QuestPath({
   stat: Stat | undefined;
 }) {
   const toggleQuestStep = useAppStore((s) => s.toggleQuestStep);
+  // CSS alone cannot stop a JS-driven loop, so the preference is read here too.
+  const reduceMotion = useReducedMotion();
   const fill = stat ? statFill(stat.name) : 'var(--accent)';
   const ink = stat ? statInk(stat.name) : 'var(--accent-ink)';
   const nextIndex = steps.findIndex((s) => !s.done);
@@ -58,8 +60,8 @@ export function QuestPath({
                   }`,
                   opacity: locked ? 0.75 : 1,
                 }}
-                animate={isNext ? { scale: [1, 1.06, 1] } : { scale: 1 }}
-                transition={{ duration: 1.6, repeat: isNext ? Infinity : 0, ease: 'easeInOut' }}
+                animate={isNext && !reduceMotion ? { scale: [1, 1.06, 1] } : { scale: 1 }}
+                transition={{ duration: 1.6, repeat: isNext && !reduceMotion ? Infinity : 0, ease: 'easeInOut' }}
               >
                 {step.done ? (
                   <Icon name="check" width={30} height={30} strokeWidth={4} className="text-white" />
@@ -72,9 +74,9 @@ export function QuestPath({
                   </span>
                 )}
 
-                {isNext && (
+                {isNext && !reduceMotion && (
                   <motion.span
-                    className="absolute -inset-1.5 rounded-full border-4"
+                    className="pointer-events-none absolute -inset-1.5 rounded-full border-4"
                     style={{ borderColor: fill }}
                     animate={{ opacity: [0.7, 0, 0.7], scale: [1, 1.25, 1] }}
                     transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}

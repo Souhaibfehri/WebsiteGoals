@@ -58,7 +58,8 @@ export function DashboardPage() {
     (h) => streaks.find((s) => s.goalId === h.id)?.lastCompletedDate === todayIso()
   ).length;
 
-  const bestStreak = streaks.reduce((m, s) => Math.max(m, s.currentStreak), 0);
+  const streakState = useAppStore((s) => s.streakState);
+  const bestStreak = streakState.current;
   const stepsDone = questSteps.filter((s) => s.done).length;
   const milestonesBanked = checkpoints.filter((c) => c.reached).length;
 
@@ -162,7 +163,7 @@ export function DashboardPage() {
           sub="across all stats"
           trend={trend.some((v) => v > 0) ? trend : undefined}
         />
-        <StatTile label="Best streak" value={String(bestStreak)} sub="days running" />
+        <StatTile label="Best streak" value={String(streakState.best)} sub="days running" />
         <StatTile label="Steps done" value={String(stepsDone)} sub="quest progress" />
         <StatTile label="Milestones" value={String(milestonesBanked)} sub="banked in targets" />
       </section>

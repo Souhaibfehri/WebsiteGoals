@@ -4,6 +4,9 @@ import { planCheckpoints } from '../lib/target';
 import type {
   Checkpoint,
   DayLog,
+  DayRecord,
+  StreakState,
+  UnlockedAchievement,
   Goal,
   GoalLog,
   LedgerEntry,
@@ -21,7 +24,7 @@ import type { Repository } from './repository';
 import { LOCAL_USER_ID } from './localUser';
 import { readItem, writeItem } from './safeStorage';
 
-const STORAGE_KEY = 'lifeos.db.v4';
+const STORAGE_KEY = 'lifeos.db.v5';
 
 interface Db {
   stats: Stat[];
@@ -30,6 +33,9 @@ interface Db {
   checkpoints: Checkpoint[];
   ledger: LedgerEntry[];
   goalLogs: GoalLog[];
+  dayRecords: DayRecord[];
+  streakState: StreakState;
+  achievements: UnlockedAchievement[];
   streaks: Streak[];
   wallet: Wallet;
   dayLogs: DayLog[];
@@ -215,6 +221,9 @@ function seedDb(): Db {
     checkpoints,
     ledger: [],
     goalLogs: [],
+    dayRecords: [],
+    streakState: { userId: LOCAL_USER_ID, current: 0, best: 0, lastGoalDate: null, freezes: 0 },
+    achievements: [],
     streaks: [],
     wallet: { userId: LOCAL_USER_ID, coins: 0 },
     dayLogs: [],
@@ -237,6 +246,15 @@ function load(): Db {
     parsed.questSteps ??= [];
     parsed.checkpoints ??= [];
     parsed.ledger ??= [];
+    parsed.dayRecords ??= [];
+    parsed.achievements ??= [];
+    parsed.streakState ??= {
+      userId: LOCAL_USER_ID,
+      current: 0,
+      best: 0,
+      lastGoalDate: null,
+      freezes: 0,
+    };
     return parsed;
   } catch {
     const db = seedDb();
@@ -363,6 +381,50 @@ export class LocalRepository implements Repository {
     this.db.ledger.push(newEntry);
     this.persist();
     return tick(newEntry);
+  }
+
+  async getDayRecords(): Promise<DayRecord[]> {
+    return tick([...this.db.dayRecords].sort((a, b) => a.date.localeCompare(b.date)));
+  }
+
+  async upsertDayRecord(record: Omit<DayRecord, 'id' | 'userId'>): Promise<DayRecord> {
+    const existing = this.db.dayRecords.find((d) => d.date === record.date);
+    if (existing) {
+      Object.assign(existing, record);
+      this.persist();
+      return tick(existing);
+    }
+    const created: DayRecord = { ...record, id: makeId(), userId: LOCAL_USER_ID };
+    this.db.dayRecords.push(created);
+    this.persist();
+    return tick(created);
+  }
+
+  async getStreakState(): Promise<StreakState> {
+    return tick(this.db.streakState);
+  }
+
+  async saveStreakState(patch: Partial<Omit<StreakState, 'userId'>>): Promise<StreakState> {
+    Object.assign(this.db.streakState, patch);
+    this.persist();
+    return tick(this.db.streakState);
+  }
+
+  async getAchievements(): Promise<UnlockedAchievement[]> {
+    return tick([...this.db.achievements]);
+  }
+
+  async unlockAchievement(id: string): Promise<UnlockedAchievement> {
+    const existing = this.db.achievements.find((a) => a.achievementId === id);
+    if (existing) return tick(existing);
+    const created: UnlockedAchievement = {
+      userId: LOCAL_USER_ID,
+      achievementId: id,
+      unlockedAt: new Date().toISOString(),
+    };
+    this.db.achievements.push(created);
+    this.persist();
+    return tick(created);
   }
 
   async getStreaks(): Promise<Streak[]> {

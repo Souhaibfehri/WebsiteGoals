@@ -13,7 +13,25 @@ const base: SVGProps<SVGSVGElement> = {
   strokeLinejoin: 'round',
 };
 
-export type IconName = 'coins' | 'activity' | 'briefcase' | 'target' | 'brain' | 'check' | 'flame' | 'plus' | 'x' | 'trash';
+export type IconName =
+  | 'coins'
+  | 'building'
+  | 'briefcase'
+  | 'activity'
+  | 'star'
+  | 'video'
+  | 'brain'
+  | 'check'
+  | 'flame'
+  | 'plus'
+  | 'x'
+  | 'trash'
+  | 'copy'
+  | 'chevron'
+  | 'pin'
+  | 'arrow-right'
+  | 'grid'
+  | 'map';
 
 export function Icon({ name, ...props }: { name: IconName } & SVGProps<SVGSVGElement>) {
   const p = { ...base, ...props };
@@ -25,10 +43,13 @@ export function Icon({ name, ...props }: { name: IconName } & SVGProps<SVGSVGEle
           <path d="M14.5 9a6 6 0 1 1 0 10 6 6 0 0 1 0-10Z" />
         </svg>
       );
-    case 'activity':
+    case 'building':
       return (
         <svg {...p}>
-          <polyline points="3 13 8 13 10 8 14 18 16 13 21 13" />
+          <path d="M3 21h18" />
+          <path d="M5 21V7l7-4 7 4v14" />
+          <path d="M9 21v-5h6v5" />
+          <path d="M9 10h.01M15 10h.01M9 13h.01M15 13h.01" />
         </svg>
       );
     case 'briefcase':
@@ -38,12 +59,23 @@ export function Icon({ name, ...props }: { name: IconName } & SVGProps<SVGSVGEle
           <path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
         </svg>
       );
-    case 'target':
+    case 'activity':
       return (
         <svg {...p}>
-          <circle cx="12" cy="12" r="8" />
-          <circle cx="12" cy="12" r="4" />
-          <circle cx="12" cy="12" r="0.5" />
+          <polyline points="3 13 8 13 10 8 14 18 16 13 21 13" />
+        </svg>
+      );
+    case 'star':
+      return (
+        <svg {...p}>
+          <polygon points="12 3 14.8 9.1 21.5 9.8 16.5 14.3 17.9 20.9 12 17.5 6.1 20.9 7.5 14.3 2.5 9.8 9.2 9.1" />
+        </svg>
+      );
+    case 'video':
+      return (
+        <svg {...p}>
+          <rect x="2" y="6" width="14" height="12" rx="2" />
+          <path d="M16 10.5 22 7v10l-6-3.5" />
         </svg>
       );
     case 'brain':
@@ -84,6 +116,50 @@ export function Icon({ name, ...props }: { name: IconName } & SVGProps<SVGSVGEle
         <svg {...p}>
           <polyline points="3 6 5 6 21 6" />
           <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+        </svg>
+      );
+    case 'copy':
+      return (
+        <svg {...p}>
+          <rect x="9" y="9" width="12" height="12" rx="2" />
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+        </svg>
+      );
+    case 'chevron':
+      return (
+        <svg {...p}>
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      );
+    case 'pin':
+      return (
+        <svg {...p}>
+          <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+          <circle cx="12" cy="10" r="3" />
+        </svg>
+      );
+    case 'arrow-right':
+      return (
+        <svg {...p}>
+          <line x1="4" y1="12" x2="19" y2="12" />
+          <polyline points="13 6 19 12 13 18" />
+        </svg>
+      );
+    case 'grid':
+      return (
+        <svg {...p}>
+          <rect x="3" y="3" width="7" height="7" rx="1.5" />
+          <rect x="14" y="3" width="7" height="7" rx="1.5" />
+          <rect x="3" y="14" width="7" height="7" rx="1.5" />
+          <rect x="14" y="14" width="7" height="7" rx="1.5" />
+        </svg>
+      );
+    case 'map':
+      return (
+        <svg {...p}>
+          <polygon points="2 6 9 3 15 6 22 3 22 18 15 21 9 18 2 21" />
+          <line x1="9" y1="3" x2="9" y2="18" />
+          <line x1="15" y1="6" x2="15" y2="21" />
         </svg>
       );
   }

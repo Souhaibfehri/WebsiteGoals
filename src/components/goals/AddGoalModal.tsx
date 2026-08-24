@@ -1,89 +1,154 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAppStore } from '../../store/useAppStore';
-import { DIFFICULTY_XP, type Difficulty, type GoalType } from '../../types';
+import { QUEST_TEMPLATES } from '../../data/templates';
+import { DIFFICULTY_XP, TRACKS, type Difficulty, type GoalType, type Track } from '../../types';
 import { Icon } from '../common/Icon';
 
-export function AddGoalModal({ onClose }: { onClose: () => void }) {
+const TYPES: { value: GoalType; label: string; hint: string }[] = [
+  { value: 'habit', label: 'Habit', hint: 'Repeats every day' },
+  { value: 'milestone', label: 'Target', hint: 'A number to reach' },
+  { value: 'quest', label: 'Quest', hint: 'A project with steps' },
+];
+
+export function AddGoalModal({
+  onClose,
+  initialType = 'habit',
+}: {
+  onClose: () => void;
+  initialType?: GoalType;
+}) {
   const stats = useAppStore((s) => s.stats);
   const addGoal = useAppStore((s) => s.addGoal);
 
   const [title, setTitle] = useState('');
-  const [type, setType] = useState<GoalType>('habit');
+  const [type, setType] = useState<GoalType>(initialType);
   const [statId, setStatId] = useState(stats[0]?.id ?? '');
   const [difficulty, setDifficulty] = useState<Difficulty>('easy');
   const [targetValue, setTargetValue] = useState('');
+  const [unit, setUnit] = useState('');
+  const [track, setTrack] = useState<Track>('Empire');
+  const [location, setLocation] = useState('');
+  const [steps, setSteps] = useState<string[]>([]);
+  const [stepDraft, setStepDraft] = useState('');
 
-  const canSubmit = title.trim().length > 0 && statId && (type !== 'milestone' || Number(targetValue) > 0);
+  const canSubmit =
+    title.trim().length > 0 &&
+    statId &&
+    (type !== 'milestone' || Number(targetValue) > 0) &&
+    (type !== 'quest' || steps.length > 0);
+
+  function applyTemplate(key: string) {
+    const tpl = QUEST_TEMPLATES.find((t) => t.key === key);
+    if (!tpl) return;
+    setTitle(tpl.title);
+    setTrack(tpl.track);
+    setSteps(tpl.steps);
+    const match = stats.find((s) => s.name === tpl.stat);
+    if (match) setStatId(match.id);
+  }
+
+  function addStep() {
+    const t = stepDraft.trim();
+    if (!t) return;
+    setSteps((s) => [...s, t]);
+    setStepDraft('');
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!canSubmit) return;
-    await addGoal({
-      title: title.trim(),
-      type,
-      statId,
-      difficulty,
-      xpValue: DIFFICULTY_XP[difficulty],
-      targetValue: type === 'milestone' ? Number(targetValue) : null,
-      currentValue: 0,
-      cadence: type === 'milestone' ? 'weekly' : 'daily',
-      active: true,
-    });
+    await addGoal(
+      {
+        title: title.trim(),
+        type,
+        statId,
+        difficulty: type === 'quest' ? 'hard' : type === 'milestone' ? 'milestone' : difficulty,
+        xpValue:
+          type === 'quest' ? 300 : type === 'milestone' ? 800 : DIFFICULTY_XP[difficulty],
+        targetValue: type === 'milestone' ? Number(targetValue) : null,
+        currentValue: 0,
+        cadence: type === 'habit' ? 'daily' : type === 'milestone' ? 'weekly' : null,
+        active: true,
+        track: type === 'quest' ? track : null,
+        location: type === 'quest' && location.trim() ? location.trim() : null,
+        unit: type === 'milestone' && unit.trim() ? unit.trim() : null,
+      },
+      type === 'quest' ? steps : undefined
+    );
     onClose();
   }
 
   return (
     <motion.div
-      className="fixed inset-0 z-40 flex items-end sm:items-center justify-center bg-black/60 p-4"
+      className="fixed inset-0 z-40 flex items-end justify-center bg-black/60 p-4 sm:items-center"
       onClick={onClose}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
     >
       <motion.form
-        className="w-full max-w-md rounded-xl border border-border bg-surface p-5"
+        className="max-h-[85svh] w-full max-w-md overflow-y-auto rounded-xl border border-border bg-surface p-5"
         onClick={(e) => e.stopPropagation()}
         onSubmit={handleSubmit}
         initial={{ opacity: 0, y: 24, scale: 0.97 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ type: 'spring', stiffness: 320, damping: 28 }}
       >
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-heading font-bold text-lg">New Goal</h2>
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="font-heading text-lg font-bold">New goal</h2>
           <button type="button" onClick={onClose} className="text-text-secondary hover:text-text">
             <Icon name="x" />
           </button>
         </div>
 
-        <label className="block text-sm text-text-secondary mb-1">Title</label>
-        <input
-          className="w-full mb-4 rounded-lg border border-border bg-bg px-3 py-2 text-text outline-none focus:border-accent"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="e.g. Full workout"
-          autoFocus
-        />
-
-        <label className="block text-sm text-text-secondary mb-1">Type</label>
-        <div className="flex gap-2 mb-4">
-          {(['habit', 'milestone'] as GoalType[]).map((t) => (
+        <div className="mb-4 grid grid-cols-3 gap-2">
+          {TYPES.map((t) => (
             <button
-              key={t}
+              key={t.value}
               type="button"
-              onClick={() => setType(t)}
-              className={`flex-1 rounded-lg border px-3 py-2 text-sm capitalize transition-transform active:scale-95 ${
-                type === t ? 'border-accent bg-accent/10 text-text' : 'border-border text-text-secondary'
+              onClick={() => setType(t.value)}
+              className={`rounded-lg border px-2 py-2 text-left transition-transform active:scale-95 ${
+                type === t.value
+                  ? 'border-accent bg-accent/10 text-text'
+                  : 'border-border text-text-secondary'
               }`}
             >
-              {t}
+              <div className="text-sm font-medium">{t.label}</div>
+              <div className="text-[10px] leading-tight text-text-tertiary">{t.hint}</div>
             </button>
           ))}
         </div>
 
-        <label className="block text-sm text-text-secondary mb-1">Stat</label>
+        {type === 'quest' && (
+          <div className="mb-4">
+            <label className="mb-1 block text-sm text-text-secondary">Start from a playbook</label>
+            <div className="flex flex-wrap gap-2">
+              {QUEST_TEMPLATES.map((t) => (
+                <button
+                  key={t.key}
+                  type="button"
+                  onClick={() => applyTemplate(t.key)}
+                  className="rounded-full border border-border px-3 py-1.5 text-xs text-text-secondary transition-colors hover:border-accent hover:text-text"
+                >
+                  {t.title}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <label className="mb-1 block text-sm text-text-secondary">Title</label>
+        <input
+          className="mb-4 w-full rounded-lg border border-border bg-bg px-3 py-2 outline-none focus:border-accent"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder={type === 'quest' ? 'e.g. Build house — Marrakech' : 'e.g. Train — gym or run'}
+        />
+
+        <label className="mb-1 block text-sm text-text-secondary">Feeds which stat</label>
         <select
-          className="w-full mb-4 rounded-lg border border-border bg-bg px-3 py-2 text-text outline-none focus:border-accent"
+          className="mb-4 w-full rounded-lg border border-border bg-bg px-3 py-2 outline-none focus:border-accent"
           value={statId}
           onChange={(e) => setStatId(e.target.value)}
         >
@@ -94,29 +159,119 @@ export function AddGoalModal({ onClose }: { onClose: () => void }) {
           ))}
         </select>
 
-        {type === 'milestone' ? (
+        {type === 'quest' && (
           <>
-            <label className="block text-sm text-text-secondary mb-1">Target value</label>
+            <label className="mb-1 block text-sm text-text-secondary">Track</label>
+            <select
+              className="mb-4 w-full rounded-lg border border-border bg-bg px-3 py-2 outline-none focus:border-accent"
+              value={track}
+              onChange={(e) => setTrack(e.target.value as Track)}
+            >
+              {TRACKS.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+
+            <label className="mb-1 block text-sm text-text-secondary">Country or place (optional)</label>
             <input
-              type="number"
-              min={1}
-              className="w-full mb-4 rounded-lg border border-border bg-bg px-3 py-2 text-text outline-none focus:border-accent"
-              value={targetValue}
-              onChange={(e) => setTargetValue(e.target.value)}
-              placeholder="e.g. 10000"
+              className="mb-4 w-full rounded-lg border border-border bg-bg px-3 py-2 outline-none focus:border-accent"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              placeholder="e.g. Morocco"
             />
+
+            <label className="mb-1 block text-sm text-text-secondary">
+              Steps {steps.length > 0 && <span className="text-text-tertiary">({steps.length})</span>}
+            </label>
+            {steps.length > 0 && (
+              <ol className="mb-2 space-y-1">
+                {steps.map((s, i) => (
+                  <li
+                    key={`${s}-${i}`}
+                    className="flex items-start gap-2 rounded-lg bg-bg px-3 py-2 text-sm"
+                  >
+                    <span className="w-4 shrink-0 text-right text-xs tabular-nums text-text-tertiary">
+                      {i + 1}
+                    </span>
+                    <span className="flex-1">{s}</span>
+                    <button
+                      type="button"
+                      onClick={() => setSteps((prev) => prev.filter((_, idx) => idx !== i))}
+                      className="shrink-0 text-text-tertiary hover:text-red-400"
+                    >
+                      <Icon name="x" width={14} height={14} />
+                    </button>
+                  </li>
+                ))}
+              </ol>
+            )}
+            <div className="mb-4 flex gap-2">
+              <input
+                value={stepDraft}
+                onChange={(e) => setStepDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addStep();
+                  }
+                }}
+                placeholder="Add a step…"
+                className="min-w-0 flex-1 rounded-lg border border-border bg-bg px-3 py-2 text-sm outline-none focus:border-accent"
+              />
+              <button
+                type="button"
+                onClick={addStep}
+                disabled={!stepDraft.trim()}
+                className="rounded-lg border border-border px-3 text-sm text-text-secondary hover:border-accent hover:text-text disabled:opacity-40"
+              >
+                Add
+              </button>
+            </div>
           </>
-        ) : (
+        )}
+
+        {type === 'milestone' && (
           <>
-            <label className="block text-sm text-text-secondary mb-1">Difficulty</label>
-            <div className="grid grid-cols-4 gap-2 mb-4">
+            <div className="mb-4 flex gap-2">
+              <div className="flex-1">
+                <label className="mb-1 block text-sm text-text-secondary">Target</label>
+                <input
+                  type="number"
+                  min={1}
+                  className="w-full rounded-lg border border-border bg-bg px-3 py-2 outline-none focus:border-accent"
+                  value={targetValue}
+                  onChange={(e) => setTargetValue(e.target.value)}
+                  placeholder="100000"
+                />
+              </div>
+              <div className="w-24">
+                <label className="mb-1 block text-sm text-text-secondary">Unit</label>
+                <input
+                  className="w-full rounded-lg border border-border bg-bg px-3 py-2 outline-none focus:border-accent"
+                  value={unit}
+                  onChange={(e) => setUnit(e.target.value)}
+                  placeholder="€"
+                />
+              </div>
+            </div>
+          </>
+        )}
+
+        {type === 'habit' && (
+          <>
+            <label className="mb-1 block text-sm text-text-secondary">Difficulty</label>
+            <div className="mb-4 grid grid-cols-4 gap-2">
               {(['trivial', 'easy', 'medium', 'hard'] as Difficulty[]).map((d) => (
                 <button
                   key={d}
                   type="button"
                   onClick={() => setDifficulty(d)}
                   className={`rounded-lg border px-2 py-2 text-xs capitalize transition-transform active:scale-95 ${
-                    difficulty === d ? 'border-accent bg-accent/10 text-text' : 'border-border text-text-secondary'
+                    difficulty === d
+                      ? 'border-accent bg-accent/10 text-text'
+                      : 'border-border text-text-secondary'
                   }`}
                 >
                   {d}
@@ -132,7 +287,7 @@ export function AddGoalModal({ onClose }: { onClose: () => void }) {
           disabled={!canSubmit}
           className="w-full rounded-lg bg-accent py-2.5 font-heading font-bold text-white transition-transform active:scale-[0.98] disabled:opacity-40 disabled:active:scale-100"
         >
-          Create Goal
+          Create
         </button>
       </motion.form>
     </motion.div>

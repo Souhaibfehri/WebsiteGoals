@@ -2,6 +2,7 @@ import type {
   DayLog,
   Goal,
   GoalLog,
+  QuestStep,
   Stat,
   Streak,
   UserUnlock,
@@ -23,6 +24,11 @@ export interface Repository {
   updateGoal(id: string, patch: Partial<Goal>): Promise<Goal>;
   deleteGoal(id: string): Promise<void>;
 
+  getQuestSteps(): Promise<QuestStep[]>;
+  addQuestStep(step: Omit<QuestStep, 'id' | 'userId'>): Promise<QuestStep>;
+  updateQuestStep(id: string, patch: Partial<QuestStep>): Promise<QuestStep>;
+  deleteQuestStepsForGoal(goalId: string): Promise<void>;
+
   getStreaks(): Promise<Streak[]>;
   upsertStreak(streak: Streak): Promise<Streak>;
 
@@ -38,4 +44,6 @@ export interface Repository {
   getUnlockables(): Promise<Unlockable[]>;
   getUserUnlocks(): Promise<UserUnlock[]>;
   unlock(unlockableId: string): Promise<UserUnlock>;
+
+  resetToSeed(): Promise<void>;
 }

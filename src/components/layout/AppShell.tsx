@@ -3,11 +3,12 @@ import { NavLink, Outlet } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAppStore } from '../../store/useAppStore';
 import { characterLevel } from '../../lib/derived';
-import { Icon } from '../common/Icon';
+import { Icon, type IconName } from '../common/Icon';
 
-const navItems = [
-  { to: '/', label: 'Dashboard' },
-  { to: '/character', label: 'Character' },
+const navItems: { to: string; label: string; icon: IconName }[] = [
+  { to: '/', label: 'Today', icon: 'check' },
+  { to: '/quests', label: 'Quests', icon: 'map' },
+  { to: '/character', label: 'Character', icon: 'grid' },
 ];
 
 function useBump(value: number) {
@@ -32,20 +33,20 @@ export function AppShell() {
   const levelBump = useBump(level);
 
   return (
-    <div className="min-h-svh bg-bg text-text">
+    <div className="min-h-svh bg-bg text-text pb-24">
       <header
         className="border-b border-border shadow-[0_4px_24px_-8px_rgba(216,98,47,0.5)]"
         style={{ background: 'linear-gradient(135deg, #d8622f, #e8a860)' }}
       >
-        <div className="max-w-3xl mx-auto px-4 py-5 flex items-center justify-between">
+        <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
           <h1 className="font-heading font-extrabold text-2xl tracking-tight text-[#0a0a0c]">
             Life OS
           </h1>
-          <div className="flex items-center gap-4 text-[#0a0a0c]">
-            <div className="text-right">
-              <div className="text-xs opacity-80">Character Level</div>
+          <div className="flex items-center gap-3 text-[#0a0a0c]">
+            <div className="text-right leading-none">
+              <div className="text-[10px] uppercase tracking-widest opacity-75">Level</div>
               <motion.div
-                className="font-heading font-extrabold text-xl leading-none"
+                className="font-heading font-extrabold text-xl"
                 animate={levelBump ? { scale: 1.25 } : { scale: 1 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 12 }}
               >
@@ -58,36 +59,46 @@ export function AppShell() {
               transition={{ type: 'spring', stiffness: 400, damping: 12 }}
             >
               <Icon name="coins" width={16} height={16} />
-              <span className="font-heading font-bold">{wallet.coins}</span>
+              <span className="font-heading font-bold tabular-nums">{wallet.coins}</span>
             </motion.div>
           </div>
         </div>
       </header>
 
-      <nav className="border-b border-border bg-surface">
-        <div className="max-w-3xl mx-auto px-4 flex gap-1">
+      <main className="max-w-3xl mx-auto px-4 py-6">
+        <Outlet />
+      </main>
+
+      {/* Bottom bar: thumb-reachable, which matters for a one-tap-a-day app. */}
+      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface/95 backdrop-blur">
+        <div className="mx-auto flex max-w-3xl">
           {navItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
-              end
+              end={item.to === '/'}
               className={({ isActive }) =>
-                `px-4 py-3 text-sm font-medium border-b-2 transition-colors active:scale-95 ${
-                  isActive
-                    ? 'border-accent text-text'
-                    : 'border-transparent text-text-secondary hover:text-text'
+                `flex flex-1 flex-col items-center gap-1 py-3 text-[11px] font-medium transition-colors ${
+                  isActive ? 'text-accent' : 'text-text-secondary hover:text-text'
                 }`
               }
             >
-              {item.label}
+              {({ isActive }) => (
+                <>
+                  <Icon name={item.icon} width={20} height={20} />
+                  <span>{item.label}</span>
+                  {isActive && (
+                    <motion.span
+                      layoutId="nav-active"
+                      className="absolute bottom-0 h-0.5 w-10 rounded-full bg-accent"
+                    />
+                  )}
+                </>
+              )}
             </NavLink>
           ))}
         </div>
       </nav>
-
-      <main className="max-w-3xl mx-auto px-4 py-6">
-        <Outlet />
-      </main>
     </div>
   );
 }

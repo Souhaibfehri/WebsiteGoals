@@ -4,22 +4,26 @@ import type {
   DayLog,
   Goal,
   GoalLog,
+  QuestStep,
   Stat,
-  Streak,
   StatName,
+  Streak,
   UserUnlock,
   Unlockable,
   Wallet,
 } from '../types';
 import { STAT_ICON, STAT_ORDER } from '../types';
+import { QUEST_TEMPLATES } from './templates';
 import type { Repository } from './repository';
 import { LOCAL_USER_ID } from './localUser';
+import { readItem, writeItem } from './safeStorage';
 
-const STORAGE_KEY = 'lifeos.db.v1';
+const STORAGE_KEY = 'lifeos.db.v2';
 
 interface Db {
   stats: Stat[];
   goals: Goal[];
+  questSteps: QuestStep[];
   goalLogs: GoalLog[];
   streaks: Streak[];
   wallet: Wallet;
@@ -40,78 +44,130 @@ function seedStats(): Stat[] {
   }));
 }
 
-function seedGoals(stats: Stat[]): Goal[] {
-  const byName = (n: StatName) => stats.find((s) => s.name === n)!.id;
+interface SeedResult {
+  goals: Goal[];
+  questSteps: QuestStep[];
+}
+
+function seedGoalsAndSteps(stats: Stat[]): SeedResult {
+  const statId = (n: StatName) => stats.find((s) => s.name === n)!.id;
   const now = new Date().toISOString();
-  const goal = (partial: Omit<Goal, 'id' | 'userId' | 'createdAt' | 'active'>): Goal => ({
-    id: makeId(),
-    userId: LOCAL_USER_ID,
-    active: true,
-    createdAt: now,
-    ...partial,
+  const goals: Goal[] = [];
+  const questSteps: QuestStep[] = [];
+
+  const make = (
+    partial: Omit<Goal, 'id' | 'userId' | 'createdAt' | 'active' | 'track' | 'location' | 'unit'> &
+      Partial<Pick<Goal, 'track' | 'location' | 'unit'>>
+  ): Goal => {
+    const goal: Goal = {
+      id: makeId(),
+      userId: LOCAL_USER_ID,
+      active: true,
+      createdAt: now,
+      track: null,
+      location: null,
+      unit: null,
+      ...partial,
+    };
+    goals.push(goal);
+    return goal;
+  };
+
+  // --- Daily habits, one per domain that benefits from a daily rep ---
+  const habit = (title: string, stat: StatName, xp: number, difficulty: Goal['difficulty']) =>
+    make({
+      title,
+      statId: statId(stat),
+      type: 'habit',
+      difficulty,
+      xpValue: xp,
+      targetValue: null,
+      currentValue: 0,
+      cadence: 'daily',
+    });
+
+  habit('Train — gym or run', 'Body', 25, 'medium');
+  habit('Brush teeth (morning + night)', 'Body', 5, 'trivial');
+  habit('7+ hours sleep', 'Body', 10, 'easy');
+  habit('One deep work block, no phone', 'Work', 25, 'medium');
+  habit('Publish or film one piece of content', 'Content', 25, 'medium');
+  habit('Reach out to one new contact', 'Reputation', 10, 'easy');
+  habit('Read or study 30 minutes', 'Mind', 10, 'easy');
+  habit('Review the numbers — revenue and spend', 'Wealth', 10, 'easy');
+
+  // --- Milestones: the big numeric targets ---
+  make({
+    title: 'Bank €100,000 in reserves',
+    statId: statId('Wealth'),
+    type: 'milestone',
+    difficulty: 'milestone',
+    xpValue: 1000,
+    targetValue: 100000,
+    currentValue: 0,
+    cadence: 'weekly',
+    unit: '€',
   });
-  return [
-    goal({
-      title: 'Brush teeth',
-      statId: byName('Body'),
-      type: 'habit',
-      difficulty: 'trivial',
-      xpValue: 5,
+  make({
+    title: 'Reach €20,000 monthly revenue',
+    statId: statId('Empire'),
+    type: 'milestone',
+    difficulty: 'milestone',
+    xpValue: 1000,
+    targetValue: 20000,
+    currentValue: 0,
+    cadence: 'weekly',
+    unit: '€',
+  });
+  make({
+    title: 'Grow to 50,000 followers',
+    statId: statId('Reputation'),
+    type: 'milestone',
+    difficulty: 'milestone',
+    xpValue: 800,
+    targetValue: 50000,
+    currentValue: 0,
+    cadence: 'weekly',
+  });
+  make({
+    title: 'Publish 100 pieces of content',
+    statId: statId('Content'),
+    type: 'milestone',
+    difficulty: 'milestone',
+    xpValue: 800,
+    targetValue: 100,
+    currentValue: 0,
+    cadence: 'weekly',
+  });
+
+  // --- Quests: multi-step campaigns, seeded from the reusable templates ---
+  for (const tpl of QUEST_TEMPLATES) {
+    const quest = make({
+      title: tpl.title,
+      statId: statId(tpl.stat as StatName),
+      type: 'quest',
+      difficulty: 'hard',
+      xpValue: 300,
       targetValue: null,
       currentValue: 0,
-      cadence: 'daily',
-    }),
-    goal({
-      title: 'Short walk',
-      statId: byName('Body'),
-      type: 'habit',
-      difficulty: 'easy',
-      xpValue: 10,
-      targetValue: null,
-      currentValue: 0,
-      cadence: 'daily',
-    }),
-    goal({
-      title: 'Full workout',
-      statId: byName('Body'),
-      type: 'habit',
-      difficulty: 'medium',
-      xpValue: 25,
-      targetValue: null,
-      currentValue: 0,
-      cadence: 'daily',
-    }),
-    goal({
-      title: 'Deep work session',
-      statId: byName('Career'),
-      type: 'habit',
-      difficulty: 'medium',
-      xpValue: 25,
-      targetValue: null,
-      currentValue: 0,
-      cadence: 'daily',
-    }),
-    goal({
-      title: 'Journal / reflect',
-      statId: byName('Mind'),
-      type: 'habit',
-      difficulty: 'easy',
-      xpValue: 10,
-      targetValue: null,
-      currentValue: 0,
-      cadence: 'daily',
-    }),
-    goal({
-      title: 'Save $10,000',
-      statId: byName('Wealth'),
-      type: 'milestone',
-      difficulty: 'milestone',
-      xpValue: 500,
-      targetValue: 10000,
-      currentValue: 0,
-      cadence: 'weekly',
-    }),
-  ];
+      cadence: null,
+      track: tpl.track,
+      location: null,
+    });
+    tpl.steps.forEach((title, i) => {
+      questSteps.push({
+        id: makeId(),
+        goalId: quest.id,
+        userId: LOCAL_USER_ID,
+        title,
+        done: false,
+        doneAt: null,
+        sortOrder: i,
+        xpValue: 50,
+      });
+    });
+  }
+
+  return { goals, questSteps };
 }
 
 function seedUnlockables(): Unlockable[] {
@@ -124,9 +180,11 @@ function seedUnlockables(): Unlockable[] {
 
 function seedDb(): Db {
   const stats = seedStats();
+  const { goals, questSteps } = seedGoalsAndSteps(stats);
   return {
     stats,
-    goals: seedGoals(stats),
+    goals,
+    questSteps,
     goalLogs: [],
     streaks: [],
     wallet: { userId: LOCAL_USER_ID, coins: 0 },
@@ -137,14 +195,18 @@ function seedDb(): Db {
 }
 
 function load(): Db {
-  const raw = localStorage.getItem(STORAGE_KEY);
+  const raw = readItem(STORAGE_KEY);
   if (!raw) {
     const db = seedDb();
     save(db);
     return db;
   }
   try {
-    return JSON.parse(raw) as Db;
+    const parsed = JSON.parse(raw) as Db;
+    // Guard against a half-written or older payload leaving the app empty.
+    if (!parsed.stats?.length || !parsed.goals) throw new Error('incomplete');
+    parsed.questSteps ??= [];
+    return parsed;
   } catch {
     const db = seedDb();
     save(db);
@@ -153,7 +215,7 @@ function load(): Db {
 }
 
 function save(db: Db): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+  writeItem(STORAGE_KEY, JSON.stringify(db));
 }
 
 /** Small artificial async boundary so call sites are already Promise-shaped for a future async backend. */
@@ -177,6 +239,7 @@ export class LocalRepository implements Repository {
     if (!stat) throw new Error(`Stat ${id} not found`);
     Object.assign(stat, patch);
     if (patch.currentXp !== undefined) {
+      stat.currentXp = Math.max(0, stat.currentXp);
       stat.level = levelFromXp(stat.currentXp).level;
     }
     this.persist();
@@ -209,6 +272,32 @@ export class LocalRepository implements Repository {
 
   async deleteGoal(id: string): Promise<void> {
     this.db.goals = this.db.goals.filter((g) => g.id !== id);
+    this.db.questSteps = this.db.questSteps.filter((s) => s.goalId !== id);
+    this.persist();
+    return tick(undefined);
+  }
+
+  async getQuestSteps(): Promise<QuestStep[]> {
+    return tick([...this.db.questSteps].sort((a, b) => a.sortOrder - b.sortOrder));
+  }
+
+  async addQuestStep(step: Omit<QuestStep, 'id' | 'userId'>): Promise<QuestStep> {
+    const newStep: QuestStep = { ...step, id: makeId(), userId: LOCAL_USER_ID };
+    this.db.questSteps.push(newStep);
+    this.persist();
+    return tick(newStep);
+  }
+
+  async updateQuestStep(id: string, patch: Partial<QuestStep>): Promise<QuestStep> {
+    const step = this.db.questSteps.find((s) => s.id === id);
+    if (!step) throw new Error(`Step ${id} not found`);
+    Object.assign(step, patch);
+    this.persist();
+    return tick(step);
+  }
+
+  async deleteQuestStepsForGoal(goalId: string): Promise<void> {
+    this.db.questSteps = this.db.questSteps.filter((s) => s.goalId !== goalId);
     this.persist();
     return tick(undefined);
   }
@@ -242,7 +331,7 @@ export class LocalRepository implements Repository {
   }
 
   async updateWallet(coins: number): Promise<Wallet> {
-    this.db.wallet.coins = coins;
+    this.db.wallet.coins = Math.max(0, coins);
     this.persist();
     return tick(this.db.wallet);
   }
@@ -275,6 +364,12 @@ export class LocalRepository implements Repository {
     this.db.userUnlocks.push(newUnlock);
     this.persist();
     return tick(newUnlock);
+  }
+
+  async resetToSeed(): Promise<void> {
+    this.db = seedDb();
+    this.persist();
+    return tick(undefined);
   }
 }
 

@@ -1,7 +1,14 @@
 // Domain types — mirror the Supabase/Postgres schema in the spec (Section 4) 1:1
 // so the local repository and a future Supabase repository are interchangeable.
 
-export type StatName = 'Wealth' | 'Body' | 'Career' | 'Discipline' | 'Mind';
+export type StatName =
+  | 'Wealth'
+  | 'Empire'
+  | 'Work'
+  | 'Body'
+  | 'Reputation'
+  | 'Content'
+  | 'Mind';
 
 export interface Stat {
   id: string;
@@ -19,6 +26,11 @@ export type Difficulty = 'trivial' | 'easy' | 'medium' | 'hard' | 'milestone';
 
 export type Cadence = 'daily' | 'weekly' | null;
 
+/** Top-level grouping for quests — a "campaign" the quest belongs to. */
+export type Track = 'Property' | 'Empire' | 'Work' | 'Health' | 'Reputation' | 'Content' | 'Personal';
+
+export const TRACKS: Track[] = ['Property', 'Empire', 'Work', 'Health', 'Reputation', 'Content', 'Personal'];
+
 export interface Goal {
   id: string;
   userId: string;
@@ -32,6 +44,22 @@ export interface Goal {
   cadence: Cadence;
   active: boolean;
   createdAt: string;
+  /** Quests only: campaign grouping and where in the world it happens. */
+  track: Track | null;
+  location: string | null;
+  unit: string | null; // milestones: '$', 'kg', 'subs'...
+}
+
+/** An ordered checklist item inside a quest. Awards XP when checked. */
+export interface QuestStep {
+  id: string;
+  goalId: string;
+  userId: string;
+  title: string;
+  done: boolean;
+  doneAt: string | null;
+  sortOrder: number;
+  xpValue: number;
 }
 
 export interface GoalLog {
@@ -88,12 +116,35 @@ export const DIFFICULTY_XP: Record<Difficulty, number> = {
   milestone: 500,
 };
 
-export const STAT_ORDER: StatName[] = ['Wealth', 'Body', 'Career', 'Discipline', 'Mind'];
+export const STAT_ORDER: StatName[] = [
+  'Wealth',
+  'Empire',
+  'Work',
+  'Body',
+  'Reputation',
+  'Content',
+  'Mind',
+];
 
 export const STAT_ICON: Record<StatName, string> = {
   Wealth: 'coins',
+  Empire: 'building',
+  Work: 'briefcase',
   Body: 'activity',
-  Career: 'briefcase',
-  Discipline: 'target',
+  Reputation: 'star',
+  Content: 'video',
   Mind: 'brain',
 };
+
+export const STAT_BLURB: Record<StatName, string> = {
+  Wealth: 'Money, savings, property value',
+  Empire: 'Businesses built, countries entered, systems that run without you',
+  Work: 'Craft, deep work, client and job outcomes',
+  Body: 'Training, sleep, food, hygiene',
+  Reputation: 'Network, brand, how you are known',
+  Content: 'Things published — video, writing, posts',
+  Mind: 'Learning, reflection, discipline',
+};
+
+/** Completing every step of a quest pays this multiple of the quest's own xpValue. */
+export const QUEST_COMPLETION_BONUS = 1;

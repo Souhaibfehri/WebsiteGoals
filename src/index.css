@@ -1,0 +1,46 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;700&display=swap');
+@import 'tailwindcss';
+
+/* Visual design direction — spec Section 11. Dark, clean, game-mechanic accents. */
+:root {
+  --bg: #0a0a0c;
+  --surface: #1a1a1e;
+  --border: #2a2a2e;
+  --text: #f2f2f4;
+  --text-secondary: #8a8a90;
+  --text-tertiary: #6a6a70;
+  --accent: #d8622f;
+  --accent-gradient: linear-gradient(135deg, #d8622f, #e8a860);
+  --success: #7fa87f;
+
+  color-scheme: dark;
+  font-family: 'DM Sans', system-ui, sans-serif;
+}
+
+@theme {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-border: var(--border);
+  --color-text: var(--text);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-tertiary: var(--text-tertiary);
+  --color-accent: var(--accent);
+  --color-success: var(--success);
+  --font-heading: 'Syne', system-ui, sans-serif;
+  --font-sans: 'DM Sans', system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  min-height: 100svh;
+}

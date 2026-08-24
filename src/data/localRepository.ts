@@ -21,7 +21,7 @@ import type { Repository } from './repository';
 import { LOCAL_USER_ID } from './localUser';
 import { readItem, writeItem } from './safeStorage';
 
-const STORAGE_KEY = 'lifeos.db.v3';
+const STORAGE_KEY = 'lifeos.db.v4';
 
 interface Db {
   stats: Stat[];

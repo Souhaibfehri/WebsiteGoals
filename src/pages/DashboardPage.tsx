@@ -6,9 +6,9 @@ import { HabitRow } from '../components/dashboard/HabitRow';
 import { MilestoneCard } from '../components/dashboard/MilestoneCard';
 import { NextActionRow } from '../components/dashboard/NextActionRow';
 import { StatTile } from '../components/dashboard/StatTile';
+import { HeroCard } from '../components/dashboard/HeroCard';
 import { TargetDetail } from '../components/targets/TargetDetail';
 import { AddGoalModal } from '../components/goals/AddGoalModal';
-import { ProgressBar } from '../components/common/ProgressBar';
 import { Icon } from '../components/common/Icon';
 import { todayIso, toIsoDate } from '../lib/date';
 import { totalXp } from '../lib/derived';
@@ -42,13 +42,21 @@ export function DashboardPage() {
 
   const statById = (id: string) => stats.find((s) => s.id === id);
 
-  const habits = goals.filter((g) => g.type === 'habit' && g.active);
-  const targets = goals.filter((g) => g.type === 'milestone');
+  /*
+   * Ordered by stat, not creation date. Two purposes: habits cluster by domain
+   * so the list reads as grouped, and neighbouring rows then follow the exact
+   * sequence the stat palette was validated in — arbitrary order can otherwise
+   * put two hues side by side that were never checked against each other.
+   */
+  const statRank = (id: string) => stats.find((s) => s.id === id)?.sortOrder ?? 99;
+  const byStat = (a: Goal, b: Goal) => statRank(a.statId) - statRank(b.statId);
+
+  const habits = goals.filter((g) => g.type === 'habit' && g.active).sort(byStat);
+  const targets = goals.filter((g) => g.type === 'milestone').sort(byStat);
 
   const doneToday = habits.filter(
     (h) => streaks.find((s) => s.goalId === h.id)?.lastCompletedDate === todayIso()
   ).length;
-  const dayProgress = habits.length === 0 ? 0 : doneToday / habits.length;
 
   const bestStreak = streaks.reduce((m, s) => Math.max(m, s.currentStreak), 0);
   const stepsDone = questSteps.filter((s) => s.done).length;
@@ -78,6 +86,8 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-7">
+      <HeroCard doneToday={doneToday} totalToday={habits.length} />
+
       <section className="grid grid-cols-2 gap-2">
         <StatTile
           label="Total XP"
@@ -88,21 +98,6 @@ export function DashboardPage() {
         <StatTile label="Best streak" value={String(bestStreak)} sub="days running" />
         <StatTile label="Steps done" value={String(stepsDone)} sub="quest progress" />
         <StatTile label="Milestones" value={String(milestonesBanked)} sub="banked in targets" />
-      </section>
-
-      <section className="rounded-xl border border-border bg-surface p-4">
-        <div className="mb-2 flex items-end justify-between">
-          <div>
-            <h2 className="font-heading text-lg font-bold">Today</h2>
-            <p className="text-sm text-text-secondary tabular-nums">
-              {doneToday} of {habits.length} done
-            </p>
-          </div>
-          <span className="font-heading text-2xl font-extrabold tabular-nums text-accent">
-            {Math.round(dayProgress * 100)}%
-          </span>
-        </div>
-        <ProgressBar progress={dayProgress} />
       </section>
 
       <section>

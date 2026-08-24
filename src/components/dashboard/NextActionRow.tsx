@@ -32,7 +32,7 @@ export function NextActionRow({
     <motion.button
       onClick={handleComplete}
       whileTap={{ scale: 0.98 }}
-      className="relative flex w-full items-start gap-3 rounded-xl border border-border bg-surface px-4 py-3 text-left transition-colors hover:border-accent hover:shadow-[0_0_0_1px_rgba(216,98,47,0.3),0_8px_24px_-12px_rgba(216,98,47,0.4)]"
+      className="card card-hover relative flex w-full items-start gap-3 px-4 py-3 text-left"
     >
       <AnimatePresence>
         {popups.map((p) => (

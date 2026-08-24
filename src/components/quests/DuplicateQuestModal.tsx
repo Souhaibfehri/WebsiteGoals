@@ -29,7 +29,7 @@ export function DuplicateQuestModal({ goal, onClose }: { goal: Goal; onClose: ()
       exit={{ opacity: 0 }}
     >
       <motion.form
-        className="w-full max-w-md rounded-xl border border-border bg-surface p-5"
+        className="w-full max-w-md rounded-2xl border border-border bg-surface-2 p-5"
         onClick={(e) => e.stopPropagation()}
         onSubmit={handleSubmit}
         initial={{ opacity: 0, y: 24, scale: 0.97 }}

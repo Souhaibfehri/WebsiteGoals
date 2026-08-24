@@ -147,15 +147,36 @@ export const DIFFICULTY_XP: Record<Difficulty, number> = {
   milestone: 500,
 };
 
+/**
+ * Display order is load-bearing: the stat hues were validated as a categorical
+ * palette in exactly this sequence (worst adjacent CVD ΔE 8.4). Reordering
+ * without re-running the validator can put two indistinguishable hues side by
+ * side.
+ */
 export const STAT_ORDER: StatName[] = [
   'Wealth',
   'Empire',
-  'Work',
   'Body',
-  'Reputation',
   'Content',
+  'Reputation',
+  'Work',
   'Mind',
 ];
+
+/** CSS custom-property name carrying each domain's identity hue. */
+export const STAT_COLOR_VAR: Record<StatName, string> = {
+  Wealth: '--stat-wealth',
+  Empire: '--stat-empire',
+  Body: '--stat-body',
+  Content: '--stat-content',
+  Reputation: '--stat-reputation',
+  Work: '--stat-work',
+  Mind: '--stat-mind',
+};
+
+export function statColor(name: StatName): string {
+  return `var(${STAT_COLOR_VAR[name]})`;
+}
 
 export const STAT_ICON: Record<StatName, string> = {
   Wealth: 'coins',
@@ -165,6 +186,17 @@ export const STAT_ICON: Record<StatName, string> = {
   Reputation: 'star',
   Content: 'video',
   Mind: 'brain',
+};
+
+/** Compact labels for the dashboard's seven-column domain strip. */
+export const STAT_SHORT: Record<StatName, string> = {
+  Wealth: 'Wealth',
+  Empire: 'Empire',
+  Body: 'Body',
+  Content: 'Content',
+  Reputation: 'Rep',
+  Work: 'Work',
+  Mind: 'Mind',
 };
 
 export const STAT_BLURB: Record<StatName, string> = {

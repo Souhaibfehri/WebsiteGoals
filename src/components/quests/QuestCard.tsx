@@ -4,6 +4,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { playCompleteChime } from '../../lib/sound';
 import { Icon } from '../common/Icon';
 import { RadialProgress } from '../common/RadialProgress';
+import { statColor } from '../../types';
 import type { Goal, QuestStep, Stat } from '../../types';
 
 export function QuestCard({
@@ -31,6 +32,7 @@ export function QuestCard({
   const progress = total === 0 ? 0 : done / total;
   const complete = total > 0 && done === total;
   const nextStep = steps.find((s) => !s.done);
+  const color = stat ? statColor(stat.name) : 'var(--accent)';
 
   function handleToggle(step: QuestStep) {
     if (!step.done) playCompleteChime();
@@ -47,15 +49,18 @@ export function QuestCard({
 
   return (
     <div
-      className={`rounded-xl border bg-surface transition-colors ${
-        complete ? 'border-success/40' : 'border-border hover:border-accent/40'
-      }`}
+      className={`card card-hover overflow-hidden ${complete ? 'opacity-70' : ''}`}
     >
+      <span
+        aria-hidden="true"
+        className="absolute inset-y-0 left-0 w-[3px]"
+        style={{ background: complete ? 'var(--success)' : color }}
+      />
       <button
         onClick={() => setOpen((o) => !o)}
         className="flex w-full items-center gap-3 px-4 py-3 text-left"
       >
-        <RadialProgress progress={progress} size={46} strokeWidth={3.5}>
+        <RadialProgress progress={progress} size={46} strokeWidth={3.5} color={color}>
           <span className="font-heading text-[11px] font-extrabold tabular-nums">
             {done}/{total}
           </span>
@@ -69,12 +74,12 @@ export function QuestCard({
           </div>
           <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-text-secondary">
             {goal.location && (
-              <span className="inline-flex items-center gap-1 text-accent">
+              <span className="inline-flex items-center gap-1 text-text-secondary">
                 <Icon name="pin" width={12} height={12} />
                 {goal.location}
               </span>
             )}
-            {stat && <span>{stat.name}</span>}
+            {stat && <span style={{ color }}>{stat.name}</span>}
             {nextStep && !complete && (
               <span className="truncate text-text-tertiary">· next: {nextStep.title}</span>
             )}

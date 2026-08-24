@@ -30,47 +30,44 @@ export function AppShell() {
   const wallet = useAppStore((s) => s.wallet);
   const level = characterLevel(stats);
   const coinBump = useBump(wallet.coins);
-  const levelBump = useBump(level);
 
   return (
-    <div className="min-h-svh bg-bg text-text pb-24">
-      <header
-        className="border-b border-border shadow-[0_4px_24px_-8px_rgba(216,98,47,0.5)]"
-        style={{ background: 'linear-gradient(135deg, #d8622f, #e8a860)' }}
-      >
-        <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="font-heading font-extrabold text-2xl tracking-tight text-[#0a0a0c]">
-            Life OS
-          </h1>
-          <div className="flex items-center gap-3 text-[#0a0a0c]">
-            <div className="text-right leading-none">
-              <div className="text-[10px] uppercase tracking-widest opacity-75">Level</div>
-              <motion.div
-                className="font-heading font-extrabold text-xl"
-                animate={levelBump ? { scale: 1.25 } : { scale: 1 }}
-                transition={{ type: 'spring', stiffness: 400, damping: 12 }}
-              >
-                {level}
-              </motion.div>
-            </div>
-            <motion.div
-              className="flex items-center gap-1.5 bg-black/15 rounded-full px-3 py-1.5"
-              animate={coinBump ? { scale: 1.15 } : { scale: 1 }}
+    <div className="min-h-svh pb-24 text-text">
+      {/* Glass strip rather than a colour slab — the accent is worth more saved
+          for the hero ring and level-up screen than spent on every scroll. */}
+      <header className="sticky top-0 z-30 border-b border-border bg-bg/80 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-2.5">
+            <span
+              className="grid h-8 w-8 place-items-center rounded-lg font-heading text-sm font-extrabold text-[#0a0a0c]"
+              style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-soft))' }}
+            >
+              L
+            </span>
+            <h1 className="font-heading text-lg font-extrabold tracking-tight">Life OS</h1>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="rounded-full border border-border bg-surface px-2.5 py-1 font-heading text-xs font-bold tabular-nums">
+              Lv {level}
+            </span>
+            <motion.span
+              className="flex items-center gap-1.5 rounded-full border border-accent/25 bg-accent/10 px-2.5 py-1 text-accent"
+              animate={coinBump ? { scale: 1.12 } : { scale: 1 }}
               transition={{ type: 'spring', stiffness: 400, damping: 12 }}
             >
-              <Icon name="coins" width={16} height={16} />
-              <span className="font-heading font-bold tabular-nums">{wallet.coins}</span>
-            </motion.div>
+              <Icon name="coins" width={14} height={14} />
+              <span className="font-heading text-xs font-bold tabular-nums">{wallet.coins}</span>
+            </motion.span>
           </div>
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto px-4 py-6">
+      <main className="mx-auto max-w-3xl px-4 py-5">
         <Outlet />
       </main>
 
-      {/* Bottom bar: thumb-reachable, which matters for a one-tap-a-day app. */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface/95 backdrop-blur">
+      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface/90 backdrop-blur-xl">
         <div className="mx-auto flex max-w-3xl">
           {navItems.map((item) => (
             <NavLink
@@ -78,21 +75,21 @@ export function AppShell() {
               to={item.to}
               end={item.to === '/'}
               className={({ isActive }) =>
-                `flex flex-1 flex-col items-center gap-1 py-3 text-[11px] font-medium transition-colors ${
+                `relative flex flex-1 flex-col items-center gap-1 py-3 text-[11px] font-medium transition-colors ${
                   isActive ? 'text-accent' : 'text-text-secondary hover:text-text'
                 }`
               }
             >
               {({ isActive }) => (
                 <>
-                  <Icon name={item.icon} width={20} height={20} />
-                  <span>{item.label}</span>
                   {isActive && (
                     <motion.span
                       layoutId="nav-active"
-                      className="absolute bottom-0 h-0.5 w-10 rounded-full bg-accent"
+                      className="absolute inset-x-5 top-0 h-0.5 rounded-full bg-accent"
                     />
                   )}
+                  <Icon name={item.icon} width={20} height={20} />
+                  <span>{item.label}</span>
                 </>
               )}
             </NavLink>

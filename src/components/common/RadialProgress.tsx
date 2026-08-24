@@ -5,11 +5,13 @@ export function RadialProgress({
   progress,
   size = 56,
   strokeWidth = 4,
+  color = 'var(--accent)',
   children,
 }: {
   progress: number;
   size?: number;
   strokeWidth?: number;
+  color?: string;
   children: React.ReactNode;
 }) {
   const radius = (size - strokeWidth) / 2;
@@ -25,7 +27,7 @@ export function RadialProgress({
           r={radius}
           fill="none"
           stroke="currentColor"
-          className="text-black/30"
+          className="text-white/[0.07]"
           strokeWidth={strokeWidth}
         />
         <motion.circle
@@ -33,7 +35,7 @@ export function RadialProgress({
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="#d8622f"
+          stroke={color}
           strokeWidth={strokeWidth}
           strokeLinecap="round"
           strokeDasharray={circumference}

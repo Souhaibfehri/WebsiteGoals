@@ -4,7 +4,8 @@ import { useAppStore } from '../../store/useAppStore';
 import { todayIso } from '../../lib/date';
 import { streakMultiplier } from '../../lib/xp';
 import { playCompleteChime } from '../../lib/sound';
-import { Icon } from '../common/Icon';
+import { Icon, type IconName } from '../common/Icon';
+import { statColor } from '../../types';
 import type { Goal, Stat } from '../../types';
 
 export function HabitRow({ goal, stat }: { goal: Goal; stat: Stat | undefined }) {
@@ -17,6 +18,7 @@ export function HabitRow({ goal, stat }: { goal: Goal; stat: Stat | undefined })
   const currentStreak = streak?.currentStreak ?? 0;
   const nextMultiplier = streakMultiplier(doneToday ? currentStreak : currentStreak + 1);
   const xpPreview = Math.round(goal.xpValue * nextMultiplier);
+  const color = stat ? statColor(stat.name) : 'var(--accent)';
 
   function handleComplete() {
     if (doneToday) return;
@@ -31,18 +33,24 @@ export function HabitRow({ goal, stat }: { goal: Goal; stat: Stat | undefined })
     <motion.button
       onClick={handleComplete}
       disabled={doneToday}
-      whileTap={!doneToday ? { scale: 0.98 } : undefined}
-      className={`relative w-full flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors ${
-        doneToday
-          ? 'border-border bg-surface/50 text-text-tertiary'
-          : 'border-border bg-surface hover:border-accent hover:shadow-[0_0_0_1px_rgba(216,98,47,0.3),0_8px_24px_-12px_rgba(216,98,47,0.4)]'
+      whileTap={!doneToday ? { scale: 0.985 } : undefined}
+      className={`card card-hover relative flex w-full items-center gap-3 overflow-hidden py-3 pl-4 pr-3 text-left ${
+        doneToday ? 'opacity-55' : ''
       }`}
     >
+      {/* Domain stripe — the row's identity, alongside the icon and stat name. */}
+      <span
+        aria-hidden="true"
+        className="absolute inset-y-0 left-0 w-[3px]"
+        style={{ background: doneToday ? 'var(--border-strong)' : color }}
+      />
+
       <AnimatePresence>
         {popups.map((p) => (
           <motion.span
             key={p.id}
-            className="pointer-events-none absolute right-4 top-1 font-heading font-bold text-accent"
+            className="pointer-events-none absolute right-4 top-1 font-heading font-bold"
+            style={{ color }}
             initial={{ opacity: 0, y: 0, scale: 0.8 }}
             animate={{ opacity: 1, y: -28, scale: 1.1 }}
             exit={{ opacity: 0, y: -40 }}
@@ -54,28 +62,47 @@ export function HabitRow({ goal, stat }: { goal: Goal; stat: Stat | undefined })
       </AnimatePresence>
 
       <motion.span
-        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${
-          doneToday ? 'border-success bg-success/20 text-success' : 'border-text-secondary'
-        }`}
+        className="grid h-6 w-6 shrink-0 place-items-center rounded-full border-2"
+        style={{
+          borderColor: doneToday ? 'var(--success)' : 'var(--text-tertiary)',
+          background: doneToday ? 'color-mix(in srgb, var(--success) 20%, transparent)' : 'transparent',
+          color: 'var(--success)',
+        }}
         animate={doneToday ? { scale: [1, 1.3, 1] } : { scale: 1 }}
         transition={{ duration: 0.35, ease: 'easeOut' }}
       >
         {doneToday && <Icon name="check" width={14} height={14} />}
       </motion.span>
-      <span className={`flex-1 font-medium ${doneToday ? 'line-through' : 'text-text'}`}>{goal.title}</span>
-      {stat && <span className="text-xs text-text-secondary">{stat.name}</span>}
+
+      <span className="min-w-0 flex-1">
+        <span
+          className={`block text-[15px] font-medium leading-snug ${
+            doneToday ? 'text-text-tertiary line-through' : 'text-text'
+          }`}
+        >
+          {goal.title}
+        </span>
+        {stat && (
+          <span className="mt-0.5 flex items-center gap-1 text-[11px]" style={{ color }}>
+            <Icon name={stat.icon as IconName} width={11} height={11} />
+            {stat.name}
+          </span>
+        )}
+      </span>
+
       {currentStreak > 0 && (
         <motion.span
-          className="flex items-center gap-1 text-xs text-accent"
-          animate={{ opacity: [1, 0.6, 1] }}
-          transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
+          className="flex shrink-0 items-center gap-1 rounded-full border border-accent/30 bg-accent/10 px-2 py-0.5 text-[11px] font-semibold text-accent tabular-nums"
+          animate={{ opacity: [1, 0.65, 1] }}
+          transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
         >
-          <Icon name="flame" width={14} height={14} />
+          <Icon name="flame" width={11} height={11} />
           {currentStreak}
         </motion.span>
       )}
-      <span className="text-xs text-text-tertiary w-14 text-right">
-        {doneToday ? `+${xpPreview} XP` : `${xpPreview} XP`}
+
+      <span className="w-12 shrink-0 text-right text-xs text-text-tertiary tabular-nums">
+        {xpPreview} XP
       </span>
     </motion.button>
   );

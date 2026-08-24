@@ -18,10 +18,16 @@ export function CharacterSheetPage() {
 
   return (
     <div className="space-y-6">
-      <div
-        className="rounded-xl border border-border p-6 text-center"
-        style={{ background: 'linear-gradient(135deg, rgba(216,98,47,0.16), rgba(232,168,96,0.08))' }}
-      >
+      <div className="card overflow-hidden p-6 text-center">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              'radial-gradient(360px 180px at 50% 0%, rgba(216,98,47,0.2), transparent 70%)',
+          }}
+        />
+        <div className="relative">
         <RadialProgress progress={characterProgress(stats)} size={104} strokeWidth={5}>
           <div className="text-center">
             <div className="font-heading text-4xl font-extrabold leading-none text-accent tabular-nums">
@@ -32,7 +38,8 @@ export function CharacterSheetPage() {
             </div>
           </div>
         </RadialProgress>
-        <div className="mt-4 flex justify-center gap-6 text-xs text-text-secondary">
+        </div>
+        <div className="relative mt-4 flex justify-center gap-6 text-xs text-text-secondary">
           <span>
             <span className="block font-heading text-base font-bold text-text tabular-nums">
               {totalXp(stats).toLocaleString()}

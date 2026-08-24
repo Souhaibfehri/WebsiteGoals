@@ -3,6 +3,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { ProgressBar } from '../common/ProgressBar';
 import { Icon } from '../common/Icon';
 import { nextCheckpoint } from '../../lib/target';
+import { statColor } from '../../types';
 import type { Goal, Stat } from '../../types';
 
 function fmt(value: number, unit: string | null) {
@@ -31,19 +32,25 @@ export function MilestoneCard({
   const progress = goal.currentValue / target;
   const next = nextCheckpoint(ladder);
   const banked = ladder.filter((c) => c.reached).length;
+  const color = stat ? statColor(stat.name) : 'var(--accent)';
 
   return (
     <button
       onClick={() => onOpen(goal)}
-      className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-left transition-colors hover:border-accent/50"
+      className="card card-hover w-full overflow-hidden px-4 py-3 text-left"
     >
+      <span
+        aria-hidden="true"
+        className="absolute inset-y-0 left-0 w-[3px]"
+        style={{ background: color }}
+      />
       <div className="mb-2 flex items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="truncate font-medium text-text">{goal.title}</div>
-          {stat && <div className="text-xs text-text-secondary">{stat.name}</div>}
+          {stat && <div className="text-xs" style={{ color }}>{stat.name}</div>}
         </div>
         <div className="shrink-0 text-right">
-          <div className="font-heading text-lg font-extrabold tabular-nums text-accent">
+          <div className="font-heading text-lg font-extrabold tabular-nums" style={{ color }}>
             {fmt(goal.currentValue, goal.unit)}
           </div>
           <div className="text-[10px] text-text-tertiary tabular-nums">

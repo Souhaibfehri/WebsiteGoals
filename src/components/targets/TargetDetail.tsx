@@ -57,13 +57,13 @@ export function TargetDetail({ goal, onClose }: { goal: Goal; onClose: () => voi
       exit={{ opacity: 0 }}
     >
       <motion.div
-        className="max-h-[92svh] w-full max-w-md overflow-y-auto rounded-t-2xl border border-border bg-surface sm:rounded-2xl"
+        className="max-h-[92svh] w-full max-w-md overflow-y-auto rounded-t-2xl border border-border bg-surface-2 sm:rounded-2xl"
         onClick={(e) => e.stopPropagation()}
         initial={{ y: 40, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
       >
-        <div className="sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-border bg-surface px-5 py-4">
+        <div className="sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-border bg-surface-2 px-5 py-4">
           <div className="min-w-0">
             <h2 className="truncate font-heading text-lg font-bold">{goal.title}</h2>
             <p className="text-xs text-text-secondary">

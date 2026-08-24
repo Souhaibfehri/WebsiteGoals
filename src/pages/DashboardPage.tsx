@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { AnimatePresence } from 'framer-motion';
 import { useAppStore } from '../store/useAppStore';
 import { HabitRow } from '../components/dashboard/HabitRow';
 import { MilestoneCard } from '../components/dashboard/MilestoneCard';
@@ -22,7 +23,7 @@ export function DashboardPage() {
           <h2 className="font-heading font-bold text-lg">Today</h2>
           <button
             onClick={() => setShowAdd(true)}
-            className="flex items-center gap-1 text-sm text-accent font-medium"
+            className="flex items-center gap-1 text-sm text-accent font-medium transition-transform active:scale-95"
           >
             <Icon name="plus" width={16} height={16} />
             Add goal
@@ -49,7 +50,7 @@ export function DashboardPage() {
         </section>
       )}
 
-      {showAdd && <AddGoalModal onClose={() => setShowAdd(false)} />}
+      <AnimatePresence>{showAdd && <AddGoalModal onClose={() => setShowAdd(false)} />}</AnimatePresence>
     </div>
   );
 }

@@ -1,4 +1,6 @@
+import { useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { useAppStore } from '../../store/useAppStore';
 import { characterLevel } from '../../lib/derived';
 import { Icon } from '../common/Icon';
@@ -8,15 +10,31 @@ const navItems = [
   { to: '/character', label: 'Character' },
 ];
 
+function useBump(value: number) {
+  const [bumping, setBumping] = useState(false);
+  const prev = useRef(value);
+  useEffect(() => {
+    if (value !== prev.current) {
+      setBumping(true);
+      const t = setTimeout(() => setBumping(false), 320);
+      prev.current = value;
+      return () => clearTimeout(t);
+    }
+  }, [value]);
+  return bumping;
+}
+
 export function AppShell() {
   const stats = useAppStore((s) => s.stats);
   const wallet = useAppStore((s) => s.wallet);
   const level = characterLevel(stats);
+  const coinBump = useBump(wallet.coins);
+  const levelBump = useBump(level);
 
   return (
     <div className="min-h-svh bg-bg text-text">
       <header
-        className="border-b border-border"
+        className="border-b border-border shadow-[0_4px_24px_-8px_rgba(216,98,47,0.5)]"
         style={{ background: 'linear-gradient(135deg, #d8622f, #e8a860)' }}
       >
         <div className="max-w-3xl mx-auto px-4 py-5 flex items-center justify-between">
@@ -26,12 +44,22 @@ export function AppShell() {
           <div className="flex items-center gap-4 text-[#0a0a0c]">
             <div className="text-right">
               <div className="text-xs opacity-80">Character Level</div>
-              <div className="font-heading font-extrabold text-xl leading-none">{level}</div>
+              <motion.div
+                className="font-heading font-extrabold text-xl leading-none"
+                animate={levelBump ? { scale: 1.25 } : { scale: 1 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 12 }}
+              >
+                {level}
+              </motion.div>
             </div>
-            <div className="flex items-center gap-1.5 bg-black/15 rounded-full px-3 py-1.5">
+            <motion.div
+              className="flex items-center gap-1.5 bg-black/15 rounded-full px-3 py-1.5"
+              animate={coinBump ? { scale: 1.15 } : { scale: 1 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 12 }}
+            >
               <Icon name="coins" width={16} height={16} />
               <span className="font-heading font-bold">{wallet.coins}</span>
-            </div>
+            </motion.div>
           </div>
         </div>
       </header>
@@ -44,7 +72,7 @@ export function AppShell() {
               to={item.to}
               end
               className={({ isActive }) =>
-                `px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                `px-4 py-3 text-sm font-medium border-b-2 transition-colors active:scale-95 ${
                   isActive
                     ? 'border-accent text-text'
                     : 'border-transparent text-text-secondary hover:text-text'

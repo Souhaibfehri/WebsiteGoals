@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 import { useAppStore } from '../../store/useAppStore';
 import { DIFFICULTY_XP, type Difficulty, type GoalType } from '../../types';
 import { Icon } from '../common/Icon';
@@ -33,11 +34,20 @@ export function AddGoalModal({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="fixed inset-0 z-40 flex items-end sm:items-center justify-center bg-black/60 p-4" onClick={onClose}>
-      <form
+    <motion.div
+      className="fixed inset-0 z-40 flex items-end sm:items-center justify-center bg-black/60 p-4"
+      onClick={onClose}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <motion.form
         className="w-full max-w-md rounded-xl border border-border bg-surface p-5"
         onClick={(e) => e.stopPropagation()}
         onSubmit={handleSubmit}
+        initial={{ opacity: 0, y: 24, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ type: 'spring', stiffness: 320, damping: 28 }}
       >
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-heading font-bold text-lg">New Goal</h2>
@@ -62,7 +72,7 @@ export function AddGoalModal({ onClose }: { onClose: () => void }) {
               key={t}
               type="button"
               onClick={() => setType(t)}
-              className={`flex-1 rounded-lg border px-3 py-2 text-sm capitalize ${
+              className={`flex-1 rounded-lg border px-3 py-2 text-sm capitalize transition-transform active:scale-95 ${
                 type === t ? 'border-accent bg-accent/10 text-text' : 'border-border text-text-secondary'
               }`}
             >
@@ -105,7 +115,7 @@ export function AddGoalModal({ onClose }: { onClose: () => void }) {
                   key={d}
                   type="button"
                   onClick={() => setDifficulty(d)}
-                  className={`rounded-lg border px-2 py-2 text-xs capitalize ${
+                  className={`rounded-lg border px-2 py-2 text-xs capitalize transition-transform active:scale-95 ${
                     difficulty === d ? 'border-accent bg-accent/10 text-text' : 'border-border text-text-secondary'
                   }`}
                 >
@@ -120,11 +130,11 @@ export function AddGoalModal({ onClose }: { onClose: () => void }) {
         <button
           type="submit"
           disabled={!canSubmit}
-          className="w-full rounded-lg bg-accent py-2.5 font-heading font-bold text-white disabled:opacity-40"
+          className="w-full rounded-lg bg-accent py-2.5 font-heading font-bold text-white transition-transform active:scale-[0.98] disabled:opacity-40 disabled:active:scale-100"
         >
           Create Goal
         </button>
-      </form>
-    </div>
+      </motion.form>
+    </motion.div>
   );
 }

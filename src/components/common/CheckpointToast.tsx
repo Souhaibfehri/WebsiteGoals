@@ -40,15 +40,15 @@ export function CheckpointToast() {
         >
           <button
             onClick={dismiss}
-            className={`flex items-center gap-3 rounded-full border bg-surface px-5 py-3 text-left ${
+            className={`flex items-center gap-3 rounded-full border-2 bg-white px-5 py-3 text-left ${
               hit.lost
                 ? 'border-border'
-                : 'border-accent/40 shadow-[0_12px_40px_-12px_rgba(216,98,47,0.6)]'
+                : 'border-[color:var(--accent)] shadow-[0_12px_30px_-12px_rgba(255,150,0,0.7)]'
             }`}
           >
             <span
               className={`grid h-9 w-9 shrink-0 place-items-center rounded-full ${
-                hit.lost ? 'bg-border text-text-secondary' : 'bg-accent text-white'
+                hit.lost ? 'bg-border text-text-secondary' : 'bg-[color:var(--accent)] text-white'
               }`}
             >
               <Icon name={hit.lost ? 'arrow-right' : 'star'} width={18} height={18} />
@@ -57,7 +57,7 @@ export function CheckpointToast() {
               <span className="block font-heading text-sm font-bold">
                 {hit.lost ? `${hit.label} milestone reopened` : `Milestone banked — ${hit.label}`}
               </span>
-              <span className="block text-xs text-text-secondary">{hit.goalTitle}</span>
+              <span className="block text-xs font-bold text-text-secondary">{hit.goalTitle}</span>
             </span>
           </button>
         </motion.div>

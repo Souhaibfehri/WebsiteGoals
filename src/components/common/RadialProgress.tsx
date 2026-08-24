@@ -27,7 +27,7 @@ export function RadialProgress({
           r={radius}
           fill="none"
           stroke="currentColor"
-          className="text-white/[0.07]"
+          className="text-border"
           strokeWidth={strokeWidth}
         />
         <motion.circle

@@ -1,59 +1,77 @@
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,600;0,700;0,800;0,900&display=swap');
 @import 'tailwindcss';
 
 /*
- * Dark, layered, game-mechanic accents. Surfaces step up in lightness with
- * elevation rather than relying on borders alone, which is what gives the cards
- * depth instead of the flat outlined look.
+ * Bright, chunky, friendly — the register a daily habit app has to live in.
+ * This design commits to a single light world on purpose (no dark variant), so
+ * every colour is painted explicitly rather than inherited from the host.
  */
 :root {
-  --bg: #08080b;
-  --surface: #141419;
-  --surface-2: #1c1c24;
-  --border: #26262e;
-  --border-strong: #34343e;
-  --text: #f4f4f6;
-  --text-secondary: #9a9aa4;
-  --text-tertiary: #6e6e78;
-  --accent: #d8622f;
-  --accent-soft: #e8a860;
-  --success: #3fce3f;
-  --danger: #f06a6a;
+  --bg: #ffffff;
+  --well: #f7f7f7;
+  --surface: #ffffff;
+  --border: #e5e5e5;
+  --border-strong: #d4d4d4;
+
+  --text: #3c3c3c;
+  --text-secondary: #777777;
+  --text-tertiary: #afafaf;
+
+  /* Brand: bright fill for large shapes, ink for text on white. */
+  --accent: #ff9600;
+  --accent-ink: #c25e00;
+  --accent-dark: #d97d00;
+
+  --success: #58cc02;
+  --success-ink: #3d8c00;
+  --success-dark: #48a802;
+  --danger: #ff4b4b;
+  --danger-ink: #c42020;
+  --danger-dark: #d63a3a;
 
   /*
-   * Per-domain identity hues. Validated as a categorical set against the dark
-   * surface in this exact order (CVD ΔE 8.4 worst adjacent, normal-vision 19.3)
+   * Per-domain identity. FILL is for large tiles and buttons carrying white
+   * text; INK is for type and thin marks on white. The ink set is validated as
+   * a categorical palette in this exact display order against a white surface
+   * (chroma floor, adjacent CVD ΔE 8.1, normal-vision 18.0, all ≥3:1 contrast)
    * — reordering the stat list without re-running the validator can break it.
-   * Every use is paired with an icon and a label, so colour never carries
-   * identity alone.
    */
-  --stat-wealth: #d95926;
-  --stat-empire: #3987e5;
-  --stat-body: #199e70;
-  --stat-content: #c98500;
-  --stat-reputation: #d55181;
-  --stat-work: #008300;
-  --stat-mind: #9085e9;
+  --wealth: #ff9600;
+  --wealth-ink: #c25e00;
+  --empire: #1cb0f6;
+  --empire-ink: #0b7fc4;
+  --body: #58cc02;
+  --body-ink: #3d8c00;
+  --reputation: #ff4b8d;
+  --reputation-ink: #c42d66;
+  --content: #ffc800;
+  --content-ink: #a67300;
+  --work: #00c2b8;
+  --work-ink: #008c7d;
+  --mind: #ce82ff;
+  --mind-ink: #8b45c9;
 
-  color-scheme: dark;
-  font-family: 'DM Sans', system-ui, sans-serif;
+  color-scheme: light;
+  font-family: Nunito, ui-rounded, 'Segoe UI', system-ui, sans-serif;
 }
 
 @theme {
   --color-bg: var(--bg);
+  --color-well: var(--well);
   --color-surface: var(--surface);
-  --color-surface-2: var(--surface-2);
   --color-border: var(--border);
   --color-border-strong: var(--border-strong);
   --color-text: var(--text);
   --color-text-secondary: var(--text-secondary);
   --color-text-tertiary: var(--text-tertiary);
   --color-accent: var(--accent);
-  --color-accent-soft: var(--accent-soft);
+  --color-accent-ink: var(--accent-ink);
   --color-success: var(--success);
+  --color-success-ink: var(--success-ink);
   --color-danger: var(--danger);
-  --font-heading: 'Syne', system-ui, sans-serif;
-  --font-sans: 'DM Sans', system-ui, sans-serif;
+  --color-danger-ink: var(--danger-ink);
+  --font-heading: Nunito, ui-rounded, system-ui, sans-serif;
+  --font-sans: Nunito, ui-rounded, system-ui, sans-serif;
 }
 
 * {
@@ -62,12 +80,9 @@
 
 body {
   margin: 0;
-  background:
-    radial-gradient(900px 500px at 15% -5%, rgba(216, 98, 47, 0.1), transparent 62%),
-    radial-gradient(700px 450px at 90% 0%, rgba(57, 135, 229, 0.07), transparent 60%),
-    var(--bg);
-  background-attachment: fixed;
+  background: var(--bg);
   color: var(--text);
+  font-weight: 700;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -75,24 +90,43 @@ body {
   min-height: 100svh;
 }
 
-/* A card reads as a lit surface: gradient body plus a bright hairline on the
-   top edge only, which is what sells the depth on a dark ground. */
-@utility card {
-  position: relative;
-  border-radius: 0.85rem;
-  background: linear-gradient(180deg, var(--surface-2) 0%, var(--surface) 62%);
-  border: 1px solid var(--border);
-  box-shadow: 0 1px 0 0 rgb(255 255 255 / 0.045) inset;
+/*
+ * The signature shape of this style: a solid panel sitting on a thicker bottom
+ * edge, so everything looks physically pressable rather than drawn.
+ */
+@utility card3d {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-bottom-width: 4px;
+  border-radius: 1rem;
 }
 
-@utility card-hover {
+@utility press {
   transition:
-    border-color 160ms ease,
-    transform 160ms ease;
+    transform 60ms ease,
+    filter 120ms ease;
+  &:active:not(:disabled) {
+    transform: translateY(2px);
+  }
 }
-@utility card-hover {
-  &:hover {
-    border-color: var(--border-strong);
+
+/* Chunky filled button: bright face, darker lip that compresses on press. */
+@utility btn3d {
+  border-radius: 1rem;
+  border-bottom: 4px solid var(--btn-lip, var(--accent-dark));
+  background: var(--btn-face, var(--accent));
+  color: #fff;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  transition:
+    transform 60ms ease,
+    filter 120ms ease;
+  &:active:not(:disabled) {
+    transform: translateY(3px);
+    border-bottom-width: 1px;
+  }
+  &:disabled {
+    opacity: 0.45;
   }
 }
 
@@ -107,6 +141,6 @@ body {
 }
 
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 3px solid var(--empire);
   outline-offset: 2px;
 }

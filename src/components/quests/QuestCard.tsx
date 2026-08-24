@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAppStore } from '../../store/useAppStore';
-import { playCompleteChime } from '../../lib/sound';
+import { QuestPath } from './QuestPath';
+import { DomainArt } from '../art/DomainArt';
 import { Icon } from '../common/Icon';
-import { RadialProgress } from '../common/RadialProgress';
-import { statColor } from '../../types';
+import { statFill, statInk } from '../../types';
 import type { Goal, QuestStep, Stat } from '../../types';
 
 export function QuestCard({
@@ -20,7 +20,6 @@ export function QuestCard({
   onDuplicate: (goal: Goal) => void;
   defaultOpen?: boolean;
 }) {
-  const toggleQuestStep = useAppStore((s) => s.toggleQuestStep);
   const addStepToQuest = useAppStore((s) => s.addStepToQuest);
   const deleteGoal = useAppStore((s) => s.deleteGoal);
   const [open, setOpen] = useState(defaultOpen);
@@ -29,15 +28,10 @@ export function QuestCard({
 
   const done = steps.filter((s) => s.done).length;
   const total = steps.length;
-  const progress = total === 0 ? 0 : done / total;
+  const pct = total === 0 ? 0 : done / total;
   const complete = total > 0 && done === total;
-  const nextStep = steps.find((s) => !s.done);
-  const color = stat ? statColor(stat.name) : 'var(--accent)';
-
-  function handleToggle(step: QuestStep) {
-    if (!step.done) playCompleteChime();
-    toggleQuestStep(step.id);
-  }
+  const fill = stat ? statFill(stat.name) : 'var(--accent)';
+  const ink = stat ? statInk(stat.name) : 'var(--accent-ink)';
 
   async function handleAddStep(e: React.FormEvent) {
     e.preventDefault();
@@ -49,46 +43,51 @@ export function QuestCard({
 
   return (
     <div
-      className={`card card-hover overflow-hidden ${complete ? 'opacity-70' : ''}`}
+      className="overflow-hidden rounded-2xl border-2 border-b-4"
+      style={{ borderColor: complete ? 'var(--success)' : 'var(--border)', background: '#fff' }}
     >
-      <span
-        aria-hidden="true"
-        className="absolute inset-y-0 left-0 w-[3px]"
-        style={{ background: complete ? 'var(--success)' : color }}
-      />
-      <button
-        onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center gap-3 px-4 py-3 text-left"
-      >
-        <RadialProgress progress={progress} size={46} strokeWidth={3.5} color={color}>
-          <span className="font-heading text-[11px] font-extrabold tabular-nums">
-            {done}/{total}
+      <button onClick={() => setOpen((o) => !o)} className="w-full p-4 text-left">
+        <div className="flex items-center gap-3.5">
+          <span className="shrink-0">
+            {stat && <DomainArt name={stat.name} size={56} />}
           </span>
-        </RadialProgress>
 
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span className={`truncate font-heading font-bold ${complete ? 'text-text-secondary line-through' : ''}`}>
+          <div className="min-w-0 flex-1">
+            <h3 className="truncate font-heading text-base font-extrabold text-text">
               {goal.title}
-            </span>
-          </div>
-          <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-text-secondary">
-            {goal.location && (
-              <span className="inline-flex items-center gap-1 text-text-secondary">
-                <Icon name="pin" width={12} height={12} />
-                {goal.location}
-              </span>
-            )}
-            {stat && <span style={{ color }}>{stat.name}</span>}
-            {nextStep && !complete && (
-              <span className="truncate text-text-tertiary">· next: {nextStep.title}</span>
-            )}
-          </div>
-        </div>
+            </h3>
+            <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs font-bold">
+              {goal.location && (
+                <span className="inline-flex items-center gap-1" style={{ color: ink }}>
+                  <Icon name="pin" width={12} height={12} />
+                  {goal.location}
+                </span>
+              )}
+              {stat && <span style={{ color: ink }}>{stat.name}</span>}
+            </div>
 
-        <motion.span animate={{ rotate: open ? 180 : 0 }} className="shrink-0 text-text-secondary">
-          <Icon name="chevron" width={18} height={18} />
-        </motion.span>
+            <div className="mt-2 flex items-center gap-2">
+              <div className="h-3 flex-1 overflow-hidden rounded-full bg-border">
+                <motion.div
+                  className="relative h-full rounded-full"
+                  style={{ background: complete ? 'var(--success)' : fill }}
+                  initial={false}
+                  animate={{ width: `${pct * 100}%` }}
+                  transition={{ type: 'spring', stiffness: 120, damping: 20 }}
+                >
+                  <span className="absolute inset-x-1 top-0.5 h-[3px] rounded-full bg-white/45" />
+                </motion.div>
+              </div>
+              <span className="shrink-0 text-xs font-extrabold text-text-secondary tabular-nums">
+                {done}/{total}
+              </span>
+            </div>
+          </div>
+
+          <motion.span animate={{ rotate: open ? 180 : 0 }} className="shrink-0 text-text-tertiary">
+            <Icon name="chevron" width={20} height={20} strokeWidth={3} />
+          </motion.span>
+        </div>
       </button>
 
       <AnimatePresence initial={false}>
@@ -97,73 +96,41 @@ export function QuestCard({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.22, ease: 'easeOut' }}
+            transition={{ duration: 0.24, ease: 'easeOut' }}
             className="overflow-hidden"
           >
-            <div className="border-t border-border px-4 py-3">
-              <ol className="space-y-1">
-                {steps.map((step, i) => (
-                  <li key={step.id}>
-                    <button
-                      onClick={() => handleToggle(step)}
-                      className="group flex w-full items-start gap-3 rounded-lg px-2 py-2 text-left transition-colors hover:bg-white/5"
-                    >
-                      <span className="mt-0.5 w-5 shrink-0 text-right font-heading text-[11px] tabular-nums text-text-tertiary">
-                        {i + 1}
-                      </span>
-                      <motion.span
-                        className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-md border-2 ${
-                          step.done
-                            ? 'border-success bg-success/20 text-success'
-                            : 'border-text-secondary group-hover:border-accent'
-                        }`}
-                        animate={step.done ? { scale: [1, 1.25, 1] } : { scale: 1 }}
-                        transition={{ duration: 0.3 }}
-                      >
-                        {step.done && <Icon name="check" width={12} height={12} />}
-                      </motion.span>
-                      <span
-                        className={`flex-1 text-sm ${
-                          step.done ? 'text-text-tertiary line-through' : 'text-text'
-                        }`}
-                      >
-                        {step.title}
-                      </span>
-                      <span className="shrink-0 text-[11px] text-text-tertiary tabular-nums">
-                        {step.xpValue} XP
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ol>
+            <div className="border-t-2 border-border bg-well px-3 py-3">
+              <QuestPath goal={goal} steps={steps} stat={stat} />
 
-              <form onSubmit={handleAddStep} className="mt-3 flex gap-2">
+              <form onSubmit={handleAddStep} className="mx-auto mt-3 flex max-w-md gap-2">
                 <input
                   value={newStep}
                   onChange={(e) => setNewStep(e.target.value)}
                   placeholder="Add a step…"
-                  className="min-w-0 flex-1 rounded-lg border border-border bg-bg px-3 py-2 text-sm outline-none focus:border-accent"
+                  className="min-w-0 flex-1 rounded-xl border-2 border-border bg-white px-3 py-2.5 text-sm font-bold outline-none focus:border-[color:var(--empire)]"
                 />
                 <button
                   type="submit"
                   disabled={!newStep.trim()}
-                  className="rounded-lg border border-border px-3 text-sm text-text-secondary transition-colors hover:border-accent hover:text-text disabled:opacity-40"
+                  className="btn3d px-4 py-2.5 text-sm"
+                  style={{ '--btn-face': fill, '--btn-lip': ink } as React.CSSProperties}
                 >
                   Add
                 </button>
               </form>
 
-              <div className="mt-3 flex items-center justify-between">
+              <div className="mx-auto mt-3 flex max-w-md items-center justify-between">
                 <button
                   onClick={() => onDuplicate(goal)}
-                  className="inline-flex items-center gap-1.5 text-xs font-medium text-accent transition-transform active:scale-95"
+                  className="press inline-flex items-center gap-1.5 text-xs font-extrabold"
+                  style={{ color: ink }}
                 >
-                  <Icon name="copy" width={14} height={14} />
+                  <Icon name="copy" width={14} height={14} strokeWidth={2.5} />
                   Clone for another place
                 </button>
                 {confirmDelete ? (
-                  <span className="flex items-center gap-2 text-xs">
-                    <button onClick={() => deleteGoal(goal.id)} className="font-medium text-red-400">
+                  <span className="flex items-center gap-2 text-xs font-extrabold">
+                    <button onClick={() => deleteGoal(goal.id)} className="text-[color:var(--danger-ink)]">
                       Delete
                     </button>
                     <button onClick={() => setConfirmDelete(false)} className="text-text-secondary">
@@ -173,7 +140,7 @@ export function QuestCard({
                 ) : (
                   <button
                     onClick={() => setConfirmDelete(true)}
-                    className="inline-flex items-center gap-1.5 text-xs text-text-tertiary transition-colors hover:text-red-400"
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-text-tertiary"
                   >
                     <Icon name="trash" width={14} height={14} />
                     Remove

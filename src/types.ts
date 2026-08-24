@@ -157,25 +157,33 @@ export const STAT_ORDER: StatName[] = [
   'Wealth',
   'Empire',
   'Body',
-  'Content',
   'Reputation',
+  'Content',
   'Work',
   'Mind',
 ];
 
-/** CSS custom-property name carrying each domain's identity hue. */
-export const STAT_COLOR_VAR: Record<StatName, string> = {
-  Wealth: '--stat-wealth',
-  Empire: '--stat-empire',
-  Body: '--stat-body',
-  Content: '--stat-content',
-  Reputation: '--stat-reputation',
-  Work: '--stat-work',
-  Mind: '--stat-mind',
+/**
+ * Two tokens per domain: the bright FILL for large shapes carrying white text,
+ * and the darker INK for type and thin marks on a white surface. Using the fill
+ * as text colour would drop below the contrast floor.
+ */
+const STAT_VAR: Record<StatName, string> = {
+  Wealth: 'wealth',
+  Empire: 'empire',
+  Body: 'body',
+  Reputation: 'reputation',
+  Content: 'content',
+  Work: 'work',
+  Mind: 'mind',
 };
 
-export function statColor(name: StatName): string {
-  return `var(${STAT_COLOR_VAR[name]})`;
+export function statFill(name: StatName): string {
+  return `var(--${STAT_VAR[name]})`;
+}
+
+export function statInk(name: StatName): string {
+  return `var(--${STAT_VAR[name]}-ink)`;
 }
 
 export const STAT_ICON: Record<StatName, string> = {

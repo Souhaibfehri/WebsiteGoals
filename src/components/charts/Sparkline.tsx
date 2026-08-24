@@ -7,7 +7,7 @@ export function Sparkline({
   values,
   width = 96,
   height = 28,
-  stroke = '#d8622f',
+  stroke = 'var(--accent)',
 }: {
   values: number[];
   width?: number;
@@ -32,7 +32,7 @@ export function Sparkline({
 
   const line = points.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
   const area = `${line} L${points.at(-1)![0].toFixed(1)},${height} L${points[0][0].toFixed(1)},${height} Z`;
-  const gradId = `spark-${stroke.replace('#', '')}`;
+  const gradId = 'spark-grad';
   const [lastX, lastY] = points.at(-1)!;
 
   return (

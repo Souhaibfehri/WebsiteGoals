@@ -1,17 +1,26 @@
 import { motion } from 'framer-motion';
 
 /** Spring-filled progress bar with a subtle shimmer sweep — used for XP and milestone bars. */
-export function ProgressBar({ progress, height = 8 }: { progress: number; height?: number }) {
+export function ProgressBar({
+  progress,
+  height = 12,
+  color = 'var(--accent)',
+}: {
+  progress: number;
+  height?: number;
+  color?: string;
+}) {
   const pct = Math.min(100, Math.max(0, progress * 100));
 
   return (
     <div
-      className="relative overflow-hidden rounded-full bg-black/30"
+      className="relative overflow-hidden rounded-full bg-border"
       style={{ height }}
     >
       <motion.div
-        className="relative h-full overflow-hidden rounded-full bg-accent"
+        className="relative h-full overflow-hidden rounded-full"
         initial={false}
+        style={{ background: color }}
         animate={{ width: `${pct}%` }}
         transition={{ type: 'spring', stiffness: 120, damping: 20 }}
       >

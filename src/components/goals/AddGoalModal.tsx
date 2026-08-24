@@ -81,14 +81,14 @@ export function AddGoalModal({
 
   return (
     <motion.div
-      className="fixed inset-0 z-40 flex items-end justify-center bg-black/60 p-4 sm:items-center"
+      className="fixed inset-0 z-40 flex items-end justify-center bg-black/45 p-4 sm:items-center"
       onClick={onClose}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
     >
       <motion.form
-        className="max-h-[85svh] w-full max-w-md overflow-y-auto rounded-2xl border border-border bg-surface-2 p-5"
+        className="max-h-[85svh] w-full max-w-md overflow-y-auto rounded-2xl border-2 border-border bg-white p-5"
         onClick={(e) => e.stopPropagation()}
         onSubmit={handleSubmit}
         initial={{ opacity: 0, y: 24, scale: 0.97 }}
@@ -108,9 +108,9 @@ export function AddGoalModal({
               key={t.value}
               type="button"
               onClick={() => setType(t.value)}
-              className={`rounded-lg border px-2 py-2 text-left transition-transform active:scale-95 ${
+              className={`rounded-xl border-2 px-2 py-2 text-left transition-transform active:scale-95 ${
                 type === t.value
-                  ? 'border-accent bg-accent/10 text-text'
+                  ? 'border-[color:var(--accent)] bg-[color:var(--accent)]/12 text-text'
                   : 'border-border text-text-secondary'
               }`}
             >
@@ -129,7 +129,7 @@ export function AddGoalModal({
                   key={t.key}
                   type="button"
                   onClick={() => applyTemplate(t.key)}
-                  className="rounded-full border border-border px-3 py-1.5 text-xs text-text-secondary transition-colors hover:border-accent hover:text-text"
+                  className="rounded-full border-2 border-border px-3 py-1.5 text-xs text-text-secondary transition-colors hover:border-accent hover:text-text"
                 >
                   {t.title}
                 </button>
@@ -140,7 +140,7 @@ export function AddGoalModal({
 
         <label className="mb-1 block text-sm text-text-secondary">Title</label>
         <input
-          className="mb-4 w-full rounded-lg border border-border bg-bg px-3 py-2 outline-none focus:border-accent"
+          className="mb-4 w-full rounded-xl border-2 border-border bg-white px-3 py-2.5 font-bold outline-none focus:border-[color:var(--empire)]"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder={type === 'quest' ? 'e.g. Build house — Marrakech' : 'e.g. Train — gym or run'}
@@ -148,7 +148,7 @@ export function AddGoalModal({
 
         <label className="mb-1 block text-sm text-text-secondary">Feeds which stat</label>
         <select
-          className="mb-4 w-full rounded-lg border border-border bg-bg px-3 py-2 outline-none focus:border-accent"
+          className="mb-4 w-full rounded-xl border-2 border-border bg-white px-3 py-2.5 font-bold outline-none focus:border-[color:var(--empire)]"
           value={statId}
           onChange={(e) => setStatId(e.target.value)}
         >
@@ -163,7 +163,7 @@ export function AddGoalModal({
           <>
             <label className="mb-1 block text-sm text-text-secondary">Track</label>
             <select
-              className="mb-4 w-full rounded-lg border border-border bg-bg px-3 py-2 outline-none focus:border-accent"
+              className="mb-4 w-full rounded-xl border-2 border-border bg-white px-3 py-2.5 font-bold outline-none focus:border-[color:var(--empire)]"
               value={track}
               onChange={(e) => setTrack(e.target.value as Track)}
             >
@@ -176,7 +176,7 @@ export function AddGoalModal({
 
             <label className="mb-1 block text-sm text-text-secondary">Country or place (optional)</label>
             <input
-              className="mb-4 w-full rounded-lg border border-border bg-bg px-3 py-2 outline-none focus:border-accent"
+              className="mb-4 w-full rounded-xl border-2 border-border bg-white px-3 py-2.5 font-bold outline-none focus:border-[color:var(--empire)]"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               placeholder="e.g. Morocco"
@@ -190,7 +190,7 @@ export function AddGoalModal({
                 {steps.map((s, i) => (
                   <li
                     key={`${s}-${i}`}
-                    className="flex items-start gap-2 rounded-lg bg-bg px-3 py-2 text-sm"
+                    className="flex items-start gap-2 rounded-xl bg-well px-3 py-2 text-sm"
                   >
                     <span className="w-4 shrink-0 text-right text-xs tabular-nums text-text-tertiary">
                       {i + 1}
@@ -218,13 +218,13 @@ export function AddGoalModal({
                   }
                 }}
                 placeholder="Add a step…"
-                className="min-w-0 flex-1 rounded-lg border border-border bg-bg px-3 py-2 text-sm outline-none focus:border-accent"
+                className="min-w-0 flex-1 rounded-xl border-2 border-border bg-white px-3 py-2.5 font-bold text-sm outline-none focus:border-[color:var(--empire)]"
               />
               <button
                 type="button"
                 onClick={addStep}
                 disabled={!stepDraft.trim()}
-                className="rounded-lg border border-border px-3 text-sm text-text-secondary hover:border-accent hover:text-text disabled:opacity-40"
+                className="rounded-lg border-2 border-border px-3 text-sm text-text-secondary hover:border-accent hover:text-text disabled:opacity-40"
               >
                 Add
               </button>
@@ -240,7 +240,7 @@ export function AddGoalModal({
                 <input
                   type="number"
                   min={1}
-                  className="w-full rounded-lg border border-border bg-bg px-3 py-2 outline-none focus:border-accent"
+                  className="w-full rounded-xl border-2 border-border bg-white px-3 py-2.5 font-bold outline-none focus:border-[color:var(--empire)]"
                   value={targetValue}
                   onChange={(e) => setTargetValue(e.target.value)}
                   placeholder="100000"
@@ -249,7 +249,7 @@ export function AddGoalModal({
               <div className="w-24">
                 <label className="mb-1 block text-sm text-text-secondary">Unit</label>
                 <input
-                  className="w-full rounded-lg border border-border bg-bg px-3 py-2 outline-none focus:border-accent"
+                  className="w-full rounded-xl border-2 border-border bg-white px-3 py-2.5 font-bold outline-none focus:border-[color:var(--empire)]"
                   value={unit}
                   onChange={(e) => setUnit(e.target.value)}
                   placeholder="€"
@@ -268,9 +268,9 @@ export function AddGoalModal({
                   key={d}
                   type="button"
                   onClick={() => setDifficulty(d)}
-                  className={`rounded-lg border px-2 py-2 text-xs capitalize transition-transform active:scale-95 ${
+                  className={`rounded-xl border-2 px-2 py-2 text-xs font-extrabold capitalize transition-transform active:scale-95 ${
                     difficulty === d
-                      ? 'border-accent bg-accent/10 text-text'
+                      ? 'border-[color:var(--accent)] bg-[color:var(--accent)]/12 text-text'
                       : 'border-border text-text-secondary'
                   }`}
                 >
@@ -285,7 +285,7 @@ export function AddGoalModal({
         <button
           type="submit"
           disabled={!canSubmit}
-          className="w-full rounded-lg bg-accent py-2.5 font-heading font-bold text-white transition-transform active:scale-[0.98] disabled:opacity-40 disabled:active:scale-100"
+          className="w-full btn3d py-3 font-heading text-base"
         >
           Create
         </button>

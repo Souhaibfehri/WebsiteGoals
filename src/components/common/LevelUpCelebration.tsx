@@ -6,7 +6,7 @@ import { Icon, type IconName } from './Icon';
 import { STAT_ICON } from '../../types';
 import { playLevelUpFanfare } from '../../lib/sound';
 
-const CONFETTI_COLORS = ['#0a0a0c', '#f2f2f4', '#e8a860'];
+const CONFETTI_COLORS = ['#FF9600', '#FFC800', '#58CC02', '#1CB0F6', '#CE82FF'];
 
 function burstConfetti() {
   confetti({
@@ -50,7 +50,7 @@ export function LevelUpCelebration() {
         <motion.div
           key={event.id}
           className="fixed inset-0 z-50 flex items-center justify-center p-6 overflow-hidden"
-          style={{ background: 'linear-gradient(135deg, #d8622f, #e8a860)' }}
+          style={{ background: 'linear-gradient(160deg, #FF9600 0%, #FFC800 100%)' }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -65,26 +65,26 @@ export function LevelUpCelebration() {
           />
 
           <motion.div
-            className="relative text-center text-[#0a0a0c]"
+            className="relative text-center text-white"
             initial={{ scale: 0.6, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ type: 'spring', stiffness: 260, damping: 18 }}
           >
             <motion.div
-              className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-[#0a0a0c] text-[#e8a860]"
+              className="mx-auto mb-5 flex h-24 w-24 items-center justify-center rounded-full bg-white text-[color:var(--accent-ink)] shadow-lg"
               initial={{ scale: 0, rotate: -30 }}
               animate={{ scale: 1, rotate: 0 }}
               transition={{ type: 'spring', stiffness: 300, damping: 14, delay: 0.15 }}
             >
-              <Icon name={STAT_ICON[event.statName] as IconName} width={36} height={36} />
+              <Icon name={STAT_ICON[event.statName] as IconName} width={44} height={44} strokeWidth={2.5} />
             </motion.div>
 
-            <div className="uppercase tracking-[0.3em] text-sm font-medium opacity-80 mb-3">
+            <div className="mb-3 text-sm font-extrabold uppercase tracking-[0.3em] opacity-90">
               Level Up
             </div>
-            <div className="font-heading font-extrabold text-6xl mb-2">{event.statName}</div>
-            <div className="font-heading font-extrabold text-3xl">Level {event.newLevel}</div>
-            <div className="mt-8 text-sm opacity-80">Tap anywhere to continue</div>
+            <div className="mb-2 font-heading text-6xl font-extrabold drop-shadow">{event.statName}</div>
+            <div className="font-heading text-3xl font-extrabold">Level {event.newLevel}</div>
+            <div className="mt-8 text-sm font-bold opacity-90">Tap anywhere to continue</div>
           </motion.div>
         </motion.div>
       )}

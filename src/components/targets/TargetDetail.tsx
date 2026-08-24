@@ -7,8 +7,8 @@ import { Icon } from '../common/Icon';
 import { nextCheckpoint } from '../../lib/target';
 import type { Goal } from '../../types';
 
-const GOOD = '#3fce3f';
-const BAD = '#f06a6a';
+const GOOD = 'var(--success-ink)';
+const BAD = 'var(--danger-ink)';
 
 function fmt(value: number, unit: string | null): string {
   const n = Math.round(value).toLocaleString();
@@ -50,20 +50,20 @@ export function TargetDetail({ goal, onClose }: { goal: Goal; onClose: () => voi
 
   return (
     <motion.div
-      className="fixed inset-0 z-40 flex items-end justify-center bg-black/70 p-0 sm:items-center sm:p-4"
+      className="fixed inset-0 z-40 flex items-end justify-center bg-black/45 p-0 sm:items-center sm:p-4"
       onClick={onClose}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
     >
       <motion.div
-        className="max-h-[92svh] w-full max-w-md overflow-y-auto rounded-t-2xl border border-border bg-surface-2 sm:rounded-2xl"
+        className="max-h-[92svh] w-full max-w-md overflow-y-auto rounded-t-2xl border-2 border-border bg-white sm:rounded-2xl"
         onClick={(e) => e.stopPropagation()}
         initial={{ y: 40, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
       >
-        <div className="sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-border bg-surface-2 px-5 py-4">
+        <div className="sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-border bg-white px-5 py-4">
           <div className="min-w-0">
             <h2 className="truncate font-heading text-lg font-bold">{goal.title}</h2>
             <p className="text-xs text-text-secondary">
@@ -113,9 +113,9 @@ export function TargetDetail({ goal, onClose }: { goal: Goal; onClose: () => voi
               <button
                 type="button"
                 onClick={() => setMode('add')}
-                className={`rounded-lg border px-3 py-2 text-sm font-medium transition-transform active:scale-95 ${
+                className={`rounded-xl border-2 px-3 py-2.5 text-sm font-extrabold transition-transform active:scale-95 ${
                   mode === 'add'
-                    ? 'border-accent bg-accent/10 text-text'
+                    ? 'border-[color:var(--accent)] bg-[color:var(--accent)]/12 text-text'
                     : 'border-border text-text-secondary'
                 }`}
               >
@@ -124,9 +124,9 @@ export function TargetDetail({ goal, onClose }: { goal: Goal; onClose: () => voi
               <button
                 type="button"
                 onClick={() => setMode('remove')}
-                className={`rounded-lg border px-3 py-2 text-sm font-medium transition-transform active:scale-95 ${
+                className={`rounded-xl border-2 px-3 py-2.5 text-sm font-extrabold transition-transform active:scale-95 ${
                   mode === 'remove'
-                    ? 'border-[#f06a6a] bg-[#f06a6a]/10 text-text'
+                    ? 'border-[color:var(--danger)] bg-[color:var(--danger)]/12 text-text'
                     : 'border-border text-text-secondary'
                 }`}
               >
@@ -142,12 +142,12 @@ export function TargetDetail({ goal, onClose }: { goal: Goal; onClose: () => voi
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder={goal.unit ? `Amount in ${goal.unit}` : 'Amount'}
-                className="min-w-0 flex-1 rounded-lg border border-border bg-bg px-3 py-2 outline-none focus:border-accent"
+                className="min-w-0 flex-1 rounded-xl border-2 border-border bg-white px-3 py-2.5 font-bold outline-none focus:border-[color:var(--empire)]"
               />
               <button
                 type="submit"
                 disabled={!Number(amount)}
-                className="shrink-0 rounded-lg bg-accent px-4 font-heading font-bold text-white transition-transform active:scale-95 disabled:opacity-40"
+                className="btn3d shrink-0 px-5 font-heading"
               >
                 Log
               </button>
@@ -156,7 +156,7 @@ export function TargetDetail({ goal, onClose }: { goal: Goal; onClose: () => voi
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder={mode === 'remove' ? 'What did it go on? (optional)' : 'Note (optional)'}
-              className="w-full rounded-lg border border-border bg-bg px-3 py-2 text-sm outline-none focus:border-accent"
+              className="w-full rounded-xl border-2 border-border bg-white px-3 py-2.5 font-bold text-sm outline-none focus:border-[color:var(--empire)]"
             />
             {mode === 'remove' && (
               <p className="mt-2 text-[11px] leading-snug text-text-secondary">
@@ -175,7 +175,7 @@ export function TargetDetail({ goal, onClose }: { goal: Goal; onClose: () => voi
                 {[...entries].reverse().map((e) => (
                   <li
                     key={e.id}
-                    className="flex items-center justify-between gap-3 rounded-lg bg-bg px-3 py-2"
+                    className="flex items-center justify-between gap-3 rounded-xl bg-well px-3 py-2"
                   >
                     <div className="min-w-0">
                       <div className="text-sm tabular-nums" style={{ color: e.delta < 0 ? BAD : GOOD }}>

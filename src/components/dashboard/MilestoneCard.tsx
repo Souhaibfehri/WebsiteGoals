@@ -3,7 +3,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { ProgressBar } from '../common/ProgressBar';
 import { Icon } from '../common/Icon';
 import { nextCheckpoint } from '../../lib/target';
-import { statColor } from '../../types';
+import { statInk } from '../../types';
 import type { Goal, Stat } from '../../types';
 
 function fmt(value: number, unit: string | null) {
@@ -32,22 +32,17 @@ export function MilestoneCard({
   const progress = goal.currentValue / target;
   const next = nextCheckpoint(ladder);
   const banked = ladder.filter((c) => c.reached).length;
-  const color = stat ? statColor(stat.name) : 'var(--accent)';
+  const color = stat ? statInk(stat.name) : 'var(--accent-ink)';
 
   return (
     <button
       onClick={() => onOpen(goal)}
-      className="card card-hover w-full overflow-hidden px-4 py-3 text-left"
+      className="press w-full overflow-hidden rounded-2xl border-2 border-b-4 border-border bg-white px-4 py-3 text-left"
     >
-      <span
-        aria-hidden="true"
-        className="absolute inset-y-0 left-0 w-[3px]"
-        style={{ background: color }}
-      />
       <div className="mb-2 flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <div className="truncate font-medium text-text">{goal.title}</div>
-          {stat && <div className="text-xs" style={{ color }}>{stat.name}</div>}
+          <div className="truncate font-heading text-[15px] font-extrabold text-text">{goal.title}</div>
+          {stat && <div className="text-xs font-bold" style={{ color }}>{stat.name}</div>}
         </div>
         <div className="shrink-0 text-right">
           <div className="font-heading text-lg font-extrabold tabular-nums" style={{ color }}>
@@ -62,18 +57,18 @@ export function MilestoneCard({
       <ProgressBar progress={progress} />
 
       <div className="mt-2 flex items-center justify-between text-xs">
-        <span className="flex items-center gap-1.5 text-text-secondary">
+        <span className="flex items-center gap-1.5 font-bold text-text-secondary">
           <Icon name="check" width={12} height={12} />
           <span className="tabular-nums">
             {banked}/{ladder.length} milestones
           </span>
         </span>
         {next ? (
-          <span className="text-text-tertiary tabular-nums">
+          <span className="font-bold text-text-tertiary tabular-nums">
             {fmt(next.value - goal.currentValue, goal.unit)} to next
           </span>
         ) : (
-          <span className="text-success">complete</span>
+          <span className="font-extrabold text-[color:var(--success-ink)]">complete</span>
         )}
       </div>
     </button>

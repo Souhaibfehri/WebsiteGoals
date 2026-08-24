@@ -25,14 +25,14 @@ export function QuestCompleteToast() {
         >
           <button
             onClick={dismiss}
-            className="flex items-center gap-3 rounded-full border border-accent/40 bg-surface px-5 py-3 text-left shadow-[0_12px_40px_-12px_rgba(216,98,47,0.6)]"
+            className="flex items-center gap-3 rounded-full border-2 border-[color:var(--accent)] bg-white px-5 py-3 text-left shadow-[0_12px_40px_-12px_rgba(216,98,47,0.6)]"
           >
-            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-accent text-white">
+            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[color:var(--accent)] text-white">
               <Icon name="check" width={16} height={16} />
             </span>
             <span>
               <span className="block font-heading font-bold text-sm">Quest complete</span>
-              <span className="block text-xs text-text-secondary">{questDone.title}</span>
+              <span className="block text-xs font-bold text-text-secondary">{questDone.title}</span>
             </span>
           </button>
         </motion.div>

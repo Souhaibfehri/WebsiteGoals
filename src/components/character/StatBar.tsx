@@ -1,88 +1,52 @@
 import { motion } from 'framer-motion';
-import { Icon, type IconName } from '../common/Icon';
+import { DomainArt } from '../art/DomainArt';
 import { levelFromXp } from '../../lib/xp';
-import { STAT_BLURB, statColor } from '../../types';
+import { STAT_BLURB, statFill, statInk } from '../../types';
 import type { Stat } from '../../types';
 import type { StatDecayInfo } from '../../lib/decay';
 
 export function StatBar({ stat, decay }: { stat: Stat; decay: StatDecayInfo }) {
   const { level, xpIntoLevel, xpForNextLevel, progress } = levelFromXp(decay.displayedXp);
-  const color = statColor(stat.name);
-
-  const size = 52;
-  const stroke = 4;
-  const r = (size - stroke) / 2;
-  const circ = 2 * Math.PI * r;
+  const fill = statFill(stat.name);
+  const ink = statInk(stat.name);
 
   return (
-    <div className="card card-hover overflow-hidden">
-      <span
-        aria-hidden="true"
-        className="absolute inset-y-0 left-0 w-[3px]"
-        style={{ background: color }}
-      />
-      <div className="flex items-center gap-3.5 px-4 py-3.5">
-        <div className="relative shrink-0" style={{ width: size, height: size }}>
-          <svg width={size} height={size} className="-rotate-90">
-            <circle
-              cx={size / 2}
-              cy={size / 2}
-              r={r}
-              fill="none"
-              stroke="rgba(255,255,255,0.07)"
-              strokeWidth={stroke}
-            />
-            <motion.circle
-              cx={size / 2}
-              cy={size / 2}
-              r={r}
-              fill="none"
-              stroke={color}
-              strokeWidth={stroke}
-              strokeLinecap="round"
-              strokeDasharray={circ}
-              initial={false}
-              animate={{ strokeDashoffset: circ * (1 - progress) }}
-              transition={{ type: 'spring', stiffness: 120, damping: 20 }}
-            />
-          </svg>
-          <div className="absolute inset-0 grid place-items-center">
-            <span
-              className="grid h-8 w-8 place-items-center rounded-full"
-              style={{ background: `color-mix(in srgb, ${color} 20%, transparent)`, color }}
-            >
-              <Icon name={stat.icon as IconName} width={16} height={16} />
-            </span>
-          </div>
-        </div>
+    <div className="rounded-2xl border-2 border-b-4 border-border bg-white p-4">
+      <div className="flex items-center gap-3.5">
+        <DomainArt name={stat.name} size={64} />
 
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline justify-between gap-2">
-            <span className="font-heading text-[15px] font-bold tracking-wide">{stat.name}</span>
-            <span className="shrink-0 font-heading text-lg font-extrabold tabular-nums">
-              Lv {level}
+            <h3 className="font-heading text-lg font-extrabold text-text">{stat.name}</h3>
+            <span
+              className="shrink-0 rounded-full px-2.5 py-0.5 text-xs font-extrabold text-white tabular-nums"
+              style={{ background: fill }}
+            >
+              LV {level}
             </span>
           </div>
 
-          <p className="mb-2 mt-0.5 truncate text-[11px] leading-tight text-text-tertiary">
+          <p className="mb-2 mt-0.5 line-clamp-2 text-xs font-bold leading-snug text-text-secondary">
             {STAT_BLURB[stat.name]}
           </p>
 
-          <div className="h-1.5 overflow-hidden rounded-full bg-black/40">
+          <div className="h-3 overflow-hidden rounded-full bg-border">
             <motion.div
-              className="h-full rounded-full"
-              style={{ background: color }}
+              className="relative h-full rounded-full"
+              style={{ background: fill }}
               initial={false}
               animate={{ width: `${Math.min(100, progress * 100)}%` }}
               transition={{ type: 'spring', stiffness: 120, damping: 20 }}
-            />
+            >
+              <span className="absolute inset-x-1 top-0.5 h-[3px] rounded-full bg-white/45" />
+            </motion.div>
           </div>
 
-          <div className="mt-1 flex items-center justify-between text-[11px] text-text-secondary">
-            <span className="tabular-nums">
+          <div className="mt-1 flex items-center justify-between text-[11px] font-bold">
+            <span className="tabular-nums" style={{ color: ink }}>
               {xpIntoLevel} / {xpForNextLevel} XP
             </span>
-            {decay.isDecaying && <span className="text-text-tertiary">decaying &darr;</span>}
+            {decay.isDecaying && <span className="text-text-tertiary">resting &darr;</span>}
           </div>
         </div>
       </div>

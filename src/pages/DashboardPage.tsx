@@ -86,27 +86,15 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <HeroCard doneToday={doneToday} totalToday={habits.length} />
-
-      <section className="grid grid-cols-2 gap-2 lg:grid-cols-4 lg:gap-3">
-        <StatTile
-          label="Total XP"
-          value={totalXp(stats).toLocaleString()}
-          sub="across all stats"
-          trend={trend.some((v) => v > 0) ? trend : undefined}
-        />
-        <StatTile label="Best streak" value={String(bestStreak)} sub="days running" />
-        <StatTile label="Steps done" value={String(stepsDone)} sub="quest progress" />
-        <StatTile label="Milestones" value={String(milestonesBanked)} sub="banked in targets" />
-      </section>
+      <HeroCard doneToday={doneToday} totalToday={habits.length} bestStreak={bestStreak} />
 
       <div className="grid gap-6 lg:grid-cols-2 lg:items-start lg:gap-6">
       <section>
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="font-heading text-lg font-bold">Daily habits</h2>
+          <h2 className="font-heading text-xl font-extrabold">Daily habits</h2>
           <button
             onClick={() => setShowAdd(true)}
-            className="flex items-center gap-1 text-sm font-medium text-accent transition-transform active:scale-95"
+            className="press flex items-center gap-1 text-sm font-extrabold text-[color:var(--accent-ink)]"
           >
             <Icon name="plus" width={16} height={16} />
             Add
@@ -114,7 +102,7 @@ export function DashboardPage() {
         </div>
         <div className="space-y-2">
           {habits.length === 0 && (
-            <p className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-text-secondary">
+            <p className="rounded-2xl border-2 border-dashed border-border p-6 text-center text-sm font-bold text-text-secondary">
               No habits yet — add the first one.
             </p>
           )}
@@ -128,10 +116,10 @@ export function DashboardPage() {
       {nextActions.length > 0 && (
         <section>
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="font-heading text-lg font-bold">Next moves</h2>
+            <h2 className="font-heading text-xl font-extrabold">Next moves</h2>
             <button
               onClick={() => navigate('/quests')}
-              className="flex items-center gap-1 text-sm font-medium text-accent transition-transform active:scale-95"
+              className="press flex items-center gap-1 text-sm font-extrabold text-[color:var(--accent-ink)]"
             >
               All quests
               <Icon name="arrow-right" width={14} height={14} />
@@ -147,8 +135,8 @@ export function DashboardPage() {
 
       {targets.length > 0 && (
         <section>
-          <h2 className="mb-1 font-heading text-lg font-bold">Targets</h2>
-          <p className="mb-3 text-xs text-text-secondary">
+          <h2 className="mb-1 font-heading text-xl font-extrabold">Targets</h2>
+          <p className="mb-3 text-xs font-bold text-text-secondary">
             Tap one to log money in or out and see its milestones.
           </p>
           <div className="space-y-2">
@@ -166,6 +154,18 @@ export function DashboardPage() {
 
         </div>
       </div>
+
+      <section className="grid grid-cols-2 gap-2 lg:grid-cols-4 lg:gap-3">
+        <StatTile
+          label="Total XP"
+          value={totalXp(stats).toLocaleString()}
+          sub="across all stats"
+          trend={trend.some((v) => v > 0) ? trend : undefined}
+        />
+        <StatTile label="Best streak" value={String(bestStreak)} sub="days running" />
+        <StatTile label="Steps done" value={String(stepsDone)} sub="quest progress" />
+        <StatTile label="Milestones" value={String(milestonesBanked)} sub="banked in targets" />
+      </section>
 
       <AnimatePresence>
         {showAdd && <AddGoalModal onClose={() => setShowAdd(false)} />}

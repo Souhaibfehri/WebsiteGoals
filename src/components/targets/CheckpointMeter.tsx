@@ -20,10 +20,11 @@ export function CheckpointMeter({
 
   return (
     <div className="pb-5 pt-1">
-      <div className="relative h-2.5 rounded-full bg-black/35">
+      <div className="relative h-3.5 rounded-full bg-border">
         <motion.div
-          className="absolute inset-y-0 left-0 rounded-full bg-accent"
+          className="absolute inset-y-0 left-0 rounded-full"
           initial={false}
+          style={{ background: 'var(--accent)' }}
           animate={{ width: `${progress * 100}%` }}
           transition={{ type: 'spring', stiffness: 120, damping: 20 }}
         />
@@ -38,13 +39,13 @@ export function CheckpointMeter({
             >
               <div
                 className={`h-4 w-1 rounded-full ${
-                  cp.reached ? 'bg-white' : 'bg-text-tertiary'
+                  cp.reached ? 'bg-[color:var(--accent-ink)]' : 'bg-text-tertiary'
                 }`}
-                style={{ boxShadow: '0 0 0 2px var(--surface)' }}
+                style={{ boxShadow: '0 0 0 2px #fff' }}
               />
               <span
                 className={`absolute left-1/2 top-5 -translate-x-1/2 whitespace-nowrap text-[10px] tabular-nums ${
-                  cp.reached ? 'font-semibold text-text' : 'text-text-tertiary'
+                  cp.reached ? 'font-extrabold text-text' : 'font-bold text-text-tertiary'
                 }`}
               >
                 {cp.label}

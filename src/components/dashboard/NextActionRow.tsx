@@ -32,13 +32,13 @@ export function NextActionRow({
     <motion.button
       onClick={handleComplete}
       whileTap={{ scale: 0.98 }}
-      className="card card-hover relative flex w-full items-start gap-3 px-4 py-3 text-left"
+      className="press relative flex w-full items-start gap-3 rounded-2xl border-2 border-b-4 border-border bg-white px-4 py-3 text-left"
     >
       <AnimatePresence>
         {popups.map((p) => (
           <motion.span
             key={p.id}
-            className="pointer-events-none absolute right-4 top-1 font-heading font-bold text-accent"
+            className="pointer-events-none absolute right-4 top-1 font-heading text-lg font-extrabold text-[color:var(--accent-ink)]"
             initial={{ opacity: 0, y: 0, scale: 0.8 }}
             animate={{ opacity: 1, y: -28, scale: 1.1 }}
             exit={{ opacity: 0, y: -40 }}
@@ -49,14 +49,14 @@ export function NextActionRow({
         ))}
       </AnimatePresence>
 
-      <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-md border-2 border-text-secondary" />
+      <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-lg border-2 border-border" />
 
       <span className="min-w-0 flex-1">
-        <span className="block text-sm font-medium text-text">{step.title}</span>
-        <span className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-text-secondary">
+        <span className="block font-heading text-sm font-extrabold text-text">{step.title}</span>
+        <span className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs font-bold text-text-secondary">
           <span className="truncate">{goal.title}</span>
           {goal.location && (
-            <span className="inline-flex items-center gap-1 text-accent">
+            <span className="inline-flex items-center gap-1 text-[color:var(--accent-ink)]">
               <Icon name="pin" width={11} height={11} />
               {goal.location}
             </span>
@@ -67,7 +67,7 @@ export function NextActionRow({
         </span>
       </span>
 
-      <span className="shrink-0 text-xs text-text-tertiary tabular-nums">{step.xpValue} XP</span>
+      <span className="shrink-0 text-xs font-bold text-text-tertiary tabular-nums">{step.xpValue} XP</span>
     </motion.button>
   );
 }

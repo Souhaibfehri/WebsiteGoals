@@ -18,32 +18,24 @@ export function CharacterSheetPage() {
 
   return (
     <div className="space-y-6">
-      <div className="card overflow-hidden p-6">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0"
-          style={{
-            background:
-              'radial-gradient(420px 200px at 20% 0%, rgba(216,98,47,0.2), transparent 70%)',
-          }}
-        />
+      <div className="relative overflow-hidden rounded-2xl border-2 border-b-4 border-border p-6" style={{ background: 'linear-gradient(160deg, #FFF6E8 0%, #FFFFFF 60%)' }}>
         {/* Stacked on a phone, a single row once there is width to fill —
             otherwise the ring strands itself against an empty half-card. */}
         <div className="relative flex flex-col items-center gap-5 sm:flex-row sm:items-center sm:gap-7">
           <RadialProgress progress={characterProgress(stats)} size={104} strokeWidth={5}>
             <div className="text-center">
-              <div className="font-heading text-4xl font-extrabold leading-none text-accent tabular-nums">
+              <div className="font-heading text-4xl font-extrabold leading-none text-[color:var(--accent-ink)] tabular-nums">
                 {characterLevel(stats)}
               </div>
-              <div className="mt-0.5 text-[10px] uppercase tracking-widest text-text-secondary">
+              <div className="mt-0.5 text-[10px] font-extrabold uppercase tracking-widest text-text-secondary">
                 Level
               </div>
             </div>
           </RadialProgress>
 
           <div className="flex-1 text-center sm:text-left">
-            <h2 className="font-heading text-xl font-extrabold">Character sheet</h2>
-            <p className="mt-0.5 text-sm text-text-secondary">
+            <h2 className="font-heading text-2xl font-extrabold">Character sheet</h2>
+            <p className="mt-0.5 text-sm font-bold text-text-secondary">
               Every goal you finish feeds one of these seven.
             </p>
 
@@ -53,10 +45,10 @@ export function CharacterSheetPage() {
                 { v: String(stepsDone), l: 'steps done' },
                 { v: String(habitsDone), l: 'habits tracked' },
               ].map((s) => (
-                <div key={s.l} className="rounded-lg border border-border bg-black/20 px-3 py-2">
+                <div key={s.l} className="rounded-xl border-2 border-border bg-white px-3 py-2">
                   <dt className="sr-only">{s.l}</dt>
                   <dd>
-                    <span className="block font-heading text-lg font-bold text-text tabular-nums">
+                    <span className="block font-heading text-lg font-extrabold text-text tabular-nums">
                       {s.v}
                     </span>
                     {s.l}
@@ -77,7 +69,7 @@ export function CharacterSheetPage() {
       <div className="pt-2 text-center">
         {confirmReset ? (
           <div className="space-y-2">
-            <p className="text-xs text-text-secondary">
+            <p className="text-xs font-bold text-text-secondary">
               This wipes all progress and restores the starter goals.
             </p>
             <div className="flex justify-center gap-3">
@@ -86,13 +78,13 @@ export function CharacterSheetPage() {
                   await resetAll();
                   setConfirmReset(false);
                 }}
-                className="rounded-lg border border-red-400/50 px-3 py-1.5 text-xs font-medium text-red-400"
+                className="rounded-xl border-2 border-[color:var(--danger)] px-3 py-1.5 text-xs font-extrabold text-[color:var(--danger-ink)]"
               >
                 Reset everything
               </button>
               <button
                 onClick={() => setConfirmReset(false)}
-                className="rounded-lg border border-border px-3 py-1.5 text-xs text-text-secondary"
+                className="rounded-xl border-2 border-border px-3 py-1.5 text-xs font-bold text-text-secondary"
               >
                 Cancel
               </button>
@@ -101,7 +93,7 @@ export function CharacterSheetPage() {
         ) : (
           <button
             onClick={() => setConfirmReset(true)}
-            className="text-xs text-text-tertiary transition-colors hover:text-text-secondary"
+            className="text-xs font-bold text-text-tertiary transition-colors hover:text-text-secondary"
           >
             Reset progress
           </button>

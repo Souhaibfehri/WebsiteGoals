@@ -22,14 +22,14 @@ export function DuplicateQuestModal({ goal, onClose }: { goal: Goal; onClose: ()
 
   return (
     <motion.div
-      className="fixed inset-0 z-40 flex items-end justify-center bg-black/60 p-4 sm:items-center"
+      className="fixed inset-0 z-40 flex items-end justify-center bg-black/45 p-4 sm:items-center"
       onClick={onClose}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
     >
       <motion.form
-        className="w-full max-w-md rounded-2xl border border-border bg-surface-2 p-5"
+        className="w-full max-w-md rounded-2xl border-2 border-border bg-white p-5"
         onClick={(e) => e.stopPropagation()}
         onSubmit={handleSubmit}
         initial={{ opacity: 0, y: 24, scale: 0.97 }}
@@ -52,20 +52,20 @@ export function DuplicateQuestModal({ goal, onClose }: { goal: Goal; onClose: ()
           value={location}
           onChange={(e) => setLocation(e.target.value)}
           placeholder="e.g. Portugal"
-          className="mb-4 w-full rounded-lg border border-border bg-bg px-3 py-2 outline-none focus:border-accent"
+          className="mb-4 w-full rounded-xl border-2 border-border bg-white px-3 py-2.5 font-bold outline-none focus:border-[color:var(--empire)]"
         />
 
         <label className="mb-1 block text-sm text-text-secondary">Name</label>
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="mb-5 w-full rounded-lg border border-border bg-bg px-3 py-2 outline-none focus:border-accent"
+          className="mb-5 w-full rounded-xl border-2 border-border bg-white px-3 py-2.5 font-bold outline-none focus:border-[color:var(--empire)]"
         />
 
         <button
           type="submit"
           disabled={!canSubmit}
-          className="w-full rounded-lg bg-accent py-2.5 font-heading font-bold text-white transition-transform active:scale-[0.98] disabled:opacity-40 disabled:active:scale-100"
+          className="w-full btn3d py-3 font-heading text-base"
         >
           Create quest
         </button>

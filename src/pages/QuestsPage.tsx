@@ -50,14 +50,14 @@ export function QuestsPage() {
     <div className="space-y-5">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="font-heading text-xl font-bold">Quests</h2>
-          <p className="text-sm text-text-secondary">
+          <h2 className="font-heading text-2xl font-extrabold">Quests</h2>
+          <p className="text-sm font-bold text-text-secondary">
             {quests.length} campaigns · {completedCount} complete
           </p>
         </div>
         <button
           onClick={() => setShowAdd(true)}
-          className="flex shrink-0 items-center gap-1 rounded-lg bg-accent px-3 py-2 text-sm font-medium text-white transition-transform active:scale-95"
+          className="flex shrink-0 items-center gap-1 btn3d px-4 py-2.5 text-sm"
         >
           <Icon name="plus" width={16} height={16} />
           New
@@ -70,9 +70,9 @@ export function QuestsPage() {
             <button
               key={t}
               onClick={() => setTrackFilter(t)}
-              className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+              className={`rounded-full border-2 px-3 py-1.5 text-xs font-extrabold transition-colors ${
                 trackFilter === t
-                  ? 'border-accent bg-accent/15 text-text'
+                  ? 'border-[color:var(--accent)] bg-[color:var(--accent)]/12 text-[color:var(--accent-ink)]'
                   : 'border-border text-text-secondary hover:text-text'
               }`}
             >
@@ -81,8 +81,8 @@ export function QuestsPage() {
           ))}
           <button
             onClick={() => setShowDone((v) => !v)}
-            className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
-              showDone ? 'border-success/50 text-success' : 'border-border text-text-secondary'
+            className={`rounded-full border-2 px-3 py-1.5 text-xs font-extrabold transition-colors ${
+              showDone ? 'border-[color:var(--success)] text-[color:var(--success-ink)]' : 'border-border text-text-secondary'
             }`}
           >
             {showDone ? 'Hiding nothing' : 'Hide completed'}
@@ -91,8 +91,8 @@ export function QuestsPage() {
       </div>
 
       {grouped.length === 0 && (
-        <div className="rounded-xl border border-dashed border-border p-8 text-center">
-          <p className="text-sm text-text-secondary">
+        <div className="rounded-2xl border-2 border-dashed border-border p-8 text-center">
+          <p className="text-sm font-bold text-text-secondary">
             Nothing here yet. Start a campaign — a house, a market, a channel.
           </p>
         </div>
@@ -103,7 +103,7 @@ export function QuestsPage() {
       <div className="space-y-5 lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-6 lg:gap-y-5 lg:space-y-0">
       {grouped.map(([track, list]) => (
         <section key={track}>
-          <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-text-tertiary">
+          <h3 className="mb-2 text-[11px] font-extrabold uppercase tracking-wider text-text-tertiary">
             {track}
           </h3>
           <div className="space-y-2">

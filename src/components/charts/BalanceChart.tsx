@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import type { LedgerEntry } from '../../types';
 
-const ACCENT = '#d8622f';
+const ACCENT = 'var(--accent)';
 const W = 320;
 const H = 132;
 const PAD = { top: 10, right: 8, bottom: 20, left: 8 };
@@ -62,8 +62,8 @@ export function BalanceChart({
 
   if (points.length < 2) {
     return (
-      <div className="grid h-[132px] place-items-center rounded-lg border border-dashed border-border">
-        <p className="px-6 text-center text-xs text-text-secondary">
+      <div className="grid h-[132px] place-items-center rounded-xl border-2 border-dashed border-border">
+        <p className="px-6 text-center text-xs font-bold text-text-secondary">
           Log your first amount and the balance curve appears here.
         </p>
       </div>
@@ -152,7 +152,7 @@ export function BalanceChart({
               key={i}
               points={`${x(i) - 4.5},${y(p.balance) - 5} ${x(i) + 4.5},${y(p.balance) - 5} ${x(i)},${y(p.balance) + 2.5}`}
               fill={ACCENT}
-              stroke="var(--surface)"
+              stroke="#ffffff"
               strokeWidth="2"
               paintOrder="stroke"
             />
@@ -175,7 +175,7 @@ export function BalanceChart({
                 cy={y(active.balance)}
                 r="4.5"
                 fill={ACCENT}
-                stroke="var(--surface)"
+                stroke="#ffffff"
                 strokeWidth="2"
               />
             </g>
@@ -197,7 +197,7 @@ export function BalanceChart({
 
         {active && (
           <div
-            className="pointer-events-none absolute top-0 z-10 -translate-x-1/2 rounded-lg border border-border bg-bg px-2.5 py-1.5 text-xs shadow-lg"
+            className="pointer-events-none absolute top-0 z-10 -translate-x-1/2 rounded-xl border-2 border-border bg-white px-2.5 py-1.5 text-xs font-bold shadow-lg"
             style={{ left: `${(x(hover!) / W) * 100}%` }}
           >
             <div className="font-heading font-bold tabular-nums">{fmt(active.balance, unit)}</div>
@@ -205,7 +205,7 @@ export function BalanceChart({
             {active.delta !== 0 && (
               <div
                 className="text-[10px] tabular-nums"
-                style={{ color: active.delta < 0 ? '#f06a6a' : '#3fce3f' }}
+                style={{ color: active.delta < 0 ? 'var(--danger-ink)' : 'var(--success-ink)' }}
               >
                 {active.delta < 0 ? '−' : '+'}
                 {fmt(Math.abs(active.delta), unit)}

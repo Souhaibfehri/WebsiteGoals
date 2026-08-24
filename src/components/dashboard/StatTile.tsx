@@ -16,8 +16,8 @@ export function StatTile({
   trend?: number[];
 }) {
   return (
-    <div className="card px-3 py-2.5">
-      <div className="text-[10px] uppercase tracking-widest text-text-tertiary">{label}</div>
+    <div className="rounded-2xl border-2 border-b-4 border-border bg-white px-3 py-2.5">
+      <div className="text-[10px] font-extrabold uppercase tracking-wider text-text-tertiary">{label}</div>
       <div className="mt-0.5 flex items-end justify-between gap-2">
         <div className="min-w-0">
           <div className="font-heading text-xl font-extrabold leading-none tabular-nums">{value}</div>

@@ -98,11 +98,15 @@ export function QuestsPage() {
         </div>
       )}
 
+      {/* Sections tile two-up on desktop: most tracks hold one or two quests,
+          so a per-track grid would leave half the row empty. */}
+      <div className="space-y-5 lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-6 lg:gap-y-5 lg:space-y-0">
       {grouped.map(([track, list]) => (
-        <section key={track} className="space-y-2">
-          <h3 className="text-[11px] font-semibold uppercase tracking-widest text-text-tertiary">
+        <section key={track}>
+          <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-text-tertiary">
             {track}
           </h3>
+          <div className="space-y-2">
           {list.map((q) => (
             <QuestCard
               key={q.id}
@@ -112,8 +116,10 @@ export function QuestsPage() {
               onDuplicate={setDuplicating}
             />
           ))}
+          </div>
         </section>
       ))}
+      </div>
 
       <AnimatePresence>
         {duplicating && (

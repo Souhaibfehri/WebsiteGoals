@@ -85,10 +85,10 @@ export function DashboardPage() {
   }, [goals, questSteps]);
 
   return (
-    <div className="space-y-7">
+    <div className="space-y-6">
       <HeroCard doneToday={doneToday} totalToday={habits.length} />
 
-      <section className="grid grid-cols-2 gap-2">
+      <section className="grid grid-cols-2 gap-2 lg:grid-cols-4 lg:gap-3">
         <StatTile
           label="Total XP"
           value={totalXp(stats).toLocaleString()}
@@ -100,6 +100,7 @@ export function DashboardPage() {
         <StatTile label="Milestones" value={String(milestonesBanked)} sub="banked in targets" />
       </section>
 
+      <div className="grid gap-6 lg:grid-cols-2 lg:items-start lg:gap-6">
       <section>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-heading text-lg font-bold">Daily habits</h2>
@@ -123,6 +124,7 @@ export function DashboardPage() {
         </div>
       </section>
 
+      <div className="space-y-6">
       {nextActions.length > 0 && (
         <section>
           <div className="mb-3 flex items-center justify-between">
@@ -161,6 +163,9 @@ export function DashboardPage() {
           </div>
         </section>
       )}
+
+        </div>
+      </div>
 
       <AnimatePresence>
         {showAdd && <AddGoalModal onClose={() => setShowAdd(false)} />}

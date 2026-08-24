@@ -18,50 +18,57 @@ export function CharacterSheetPage() {
 
   return (
     <div className="space-y-6">
-      <div className="card overflow-hidden p-6 text-center">
+      <div className="card overflow-hidden p-6">
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0"
           style={{
             background:
-              'radial-gradient(360px 180px at 50% 0%, rgba(216,98,47,0.2), transparent 70%)',
+              'radial-gradient(420px 200px at 20% 0%, rgba(216,98,47,0.2), transparent 70%)',
           }}
         />
-        <div className="relative">
-        <RadialProgress progress={characterProgress(stats)} size={104} strokeWidth={5}>
-          <div className="text-center">
-            <div className="font-heading text-4xl font-extrabold leading-none text-accent tabular-nums">
-              {characterLevel(stats)}
+        {/* Stacked on a phone, a single row once there is width to fill —
+            otherwise the ring strands itself against an empty half-card. */}
+        <div className="relative flex flex-col items-center gap-5 sm:flex-row sm:items-center sm:gap-7">
+          <RadialProgress progress={characterProgress(stats)} size={104} strokeWidth={5}>
+            <div className="text-center">
+              <div className="font-heading text-4xl font-extrabold leading-none text-accent tabular-nums">
+                {characterLevel(stats)}
+              </div>
+              <div className="mt-0.5 text-[10px] uppercase tracking-widest text-text-secondary">
+                Level
+              </div>
             </div>
-            <div className="mt-0.5 text-[10px] uppercase tracking-widest text-text-secondary">
-              Level
-            </div>
+          </RadialProgress>
+
+          <div className="flex-1 text-center sm:text-left">
+            <h2 className="font-heading text-xl font-extrabold">Character sheet</h2>
+            <p className="mt-0.5 text-sm text-text-secondary">
+              Every goal you finish feeds one of these seven.
+            </p>
+
+            <dl className="mt-4 grid grid-cols-3 gap-3 text-xs text-text-secondary sm:max-w-md">
+              {[
+                { v: totalXp(stats).toLocaleString(), l: 'total XP' },
+                { v: String(stepsDone), l: 'steps done' },
+                { v: String(habitsDone), l: 'habits tracked' },
+              ].map((s) => (
+                <div key={s.l} className="rounded-lg border border-border bg-black/20 px-3 py-2">
+                  <dt className="sr-only">{s.l}</dt>
+                  <dd>
+                    <span className="block font-heading text-lg font-bold text-text tabular-nums">
+                      {s.v}
+                    </span>
+                    {s.l}
+                  </dd>
+                </div>
+              ))}
+            </dl>
           </div>
-        </RadialProgress>
-        </div>
-        <div className="relative mt-4 flex justify-center gap-6 text-xs text-text-secondary">
-          <span>
-            <span className="block font-heading text-base font-bold text-text tabular-nums">
-              {totalXp(stats).toLocaleString()}
-            </span>
-            total XP
-          </span>
-          <span>
-            <span className="block font-heading text-base font-bold text-text tabular-nums">
-              {stepsDone}
-            </span>
-            steps done
-          </span>
-          <span>
-            <span className="block font-heading text-base font-bold text-text tabular-nums">
-              {habitsDone}
-            </span>
-            habits tracked
-          </span>
         </div>
       </div>
 
-      <div className="space-y-3">
+      <div className="grid gap-3 lg:grid-cols-2">
         {stats.map((stat) => (
           <StatBar key={stat.id} stat={stat} decay={decayInfoForStat(stat, goals, streaks)} />
         ))}

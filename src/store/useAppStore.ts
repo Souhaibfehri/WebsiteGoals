@@ -3,7 +3,17 @@ import { repository } from '../data/localRepository';
 import { todayIso, daysBetween } from '../lib/date';
 import { coinsForXp, levelFromXp, xpForCompletion } from '../lib/xp';
 import { questToggleXp } from '../lib/quest';
-import type { Goal, QuestStep, Stat, StatName, Streak, Wallet } from '../types';
+import { applyTargetDelta } from '../lib/target';
+import type {
+  Checkpoint,
+  Goal,
+  LedgerEntry,
+  QuestStep,
+  Stat,
+  StatName,
+  Streak,
+  Wallet,
+} from '../types';
 
 export interface LevelUpEvent {
   id: string;
@@ -16,19 +26,31 @@ export interface QuestDoneEvent {
   title: string;
 }
 
+export interface CheckpointEvent {
+  id: string;
+  label: string;
+  goalTitle: string;
+  /** True when the balance fell back below this milestone rather than reaching it. */
+  lost?: boolean;
+}
+
 interface AppState {
   loading: boolean;
   stats: Stat[];
   goals: Goal[];
   questSteps: QuestStep[];
+  checkpoints: Checkpoint[];
+  ledger: LedgerEntry[];
   streaks: Streak[];
   wallet: Wallet;
   levelUpQueue: LevelUpEvent[];
   questDone: QuestDoneEvent | null;
+  checkpointHit: CheckpointEvent | null;
 
   init: () => Promise<void>;
   completeHabit: (goalId: string) => Promise<void>;
   logMilestoneValue: (goalId: string, newValue: number) => Promise<void>;
+  recordMovement: (goalId: string, delta: number, note?: string) => Promise<void>;
   toggleQuestStep: (stepId: string) => Promise<void>;
   addGoal: (goal: Omit<Goal, 'id' | 'userId' | 'createdAt'>, stepTitles?: string[]) => Promise<void>;
   duplicateQuest: (goalId: string, location: string, title?: string) => Promise<void>;
@@ -37,18 +59,21 @@ interface AppState {
   addStepToQuest: (goalId: string, title: string) => Promise<void>;
   dismissLevelUp: (id: string) => void;
   dismissQuestDone: () => void;
+  dismissCheckpoint: () => void;
   resetAll: () => Promise<void>;
 }
 
 async function refresh(set: (partial: Partial<AppState>) => void) {
-  const [stats, goals, questSteps, streaks, wallet] = await Promise.all([
+  const [stats, goals, questSteps, checkpoints, ledger, streaks, wallet] = await Promise.all([
     repository.getStats(),
     repository.getGoals(),
     repository.getQuestSteps(),
+    repository.getCheckpoints(),
+    repository.getLedger(),
     repository.getStreaks(),
     repository.getWallet(),
   ]);
-  set({ stats, goals, questSteps, streaks, wallet });
+  set({ stats, goals, questSteps, checkpoints, ledger, streaks, wallet });
 }
 
 /**
@@ -80,10 +105,13 @@ export const useAppStore = create<AppState>((set, get) => ({
   stats: [],
   goals: [],
   questSteps: [],
+  checkpoints: [],
+  ledger: [],
   streaks: [],
   wallet: { userId: 'local-user', coins: 0 },
   levelUpQueue: [],
   questDone: null,
+  checkpointHit: null,
 
   init: async () => {
     set({ loading: true });
@@ -140,6 +168,83 @@ export const useAppStore = create<AppState>((set, get) => ({
       if (levelUp) set({ levelUpQueue: [...get().levelUpQueue, levelUp] });
     } else {
       await refresh(set);
+    }
+  },
+
+  /**
+   * The single entry point for money (or followers, or posts) moving on a target.
+   * A positive delta is a contribution, a negative one a setback — spending the
+   * house fund is a real event, so it is recorded, not edited away, and any
+   * checkpoints it drops below are un-banked and their XP returned.
+   */
+  recordMovement: async (goalId: string, delta: number, note?: string) => {
+    const { goals, checkpoints, stats, wallet } = get();
+    const goal = goals.find((g) => g.id === goalId);
+    if (!goal || !goal.targetValue || delta === 0) return;
+
+    const ladder = checkpoints.filter((c) => c.goalId === goalId);
+    const result = applyTargetDelta({
+      currentValue: goal.currentValue,
+      delta,
+      targetValue: goal.targetValue,
+      checkpoints: ladder,
+    });
+
+    const appliedDelta = result.newValue - goal.currentValue;
+    if (appliedDelta === 0 && result.xpDelta === 0) return;
+
+    await repository.updateGoal(goalId, {
+      currentValue: result.newValue,
+      active: result.newValue < goal.targetValue,
+    });
+
+    await repository.addLedgerEntry({
+      goalId,
+      delta: appliedDelta,
+      note: note?.trim() || null,
+      at: new Date().toISOString(),
+      balanceAfter: result.newValue,
+    });
+
+    const now = new Date().toISOString();
+    for (const id of result.crossedUp) {
+      await repository.updateCheckpoint(id, { reached: true, reachedAt: now });
+    }
+    for (const id of result.crossedDown) {
+      await repository.updateCheckpoint(id, { reached: false, reachedAt: null });
+    }
+
+    if (result.xpDelta !== 0) {
+      await repository.addGoalLog({
+        goalId,
+        completedAt: now,
+        valueLogged: result.newValue,
+        xpAwarded: result.xpDelta,
+      });
+    }
+
+    const levelUp = await awardXp(goal.statId, result.xpDelta, stats, wallet);
+    await refresh(set);
+
+    if (levelUp) set({ levelUpQueue: [...get().levelUpQueue, levelUp] });
+
+    if (result.crossedUp.length > 0) {
+      const top = ladder
+        .filter((c) => result.crossedUp.includes(c.id))
+        .sort((a, b) => b.value - a.value)[0];
+      if (top) set({ checkpointHit: { id: top.id, label: top.label, goalTitle: goal.title } });
+    } else if (result.crossedDown.length > 0) {
+      // Say plainly which milestone reopened, and replace any lingering
+      // "banked" toast — congratulating a milestone the balance just fell
+      // below is the one message that must never be on screen here.
+      const lowest = ladder
+        .filter((c) => result.crossedDown.includes(c.id))
+        .sort((a, b) => a.value - b.value)[0];
+      set({
+        checkpointHit: lowest
+          ? { id: lowest.id, label: lowest.label, goalTitle: goal.title, lost: true }
+          : null,
+      });
     }
   },
 
@@ -269,6 +374,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   dismissQuestDone: () => set({ questDone: null }),
+
+  dismissCheckpoint: () => set({ checkpointHit: null }),
 
   resetAll: async () => {
     await repository.resetToSeed();

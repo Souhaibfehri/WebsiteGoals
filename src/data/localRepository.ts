@@ -1,9 +1,12 @@
 import { makeId } from '../lib/id';
 import { levelFromXp } from '../lib/xp';
+import { planCheckpoints } from '../lib/target';
 import type {
+  Checkpoint,
   DayLog,
   Goal,
   GoalLog,
+  LedgerEntry,
   QuestStep,
   Stat,
   StatName,
@@ -18,12 +21,14 @@ import type { Repository } from './repository';
 import { LOCAL_USER_ID } from './localUser';
 import { readItem, writeItem } from './safeStorage';
 
-const STORAGE_KEY = 'lifeos.db.v2';
+const STORAGE_KEY = 'lifeos.db.v3';
 
 interface Db {
   stats: Stat[];
   goals: Goal[];
   questSteps: QuestStep[];
+  checkpoints: Checkpoint[];
+  ledger: LedgerEntry[];
   goalLogs: GoalLog[];
   streaks: Streak[];
   wallet: Wallet;
@@ -47,6 +52,7 @@ function seedStats(): Stat[] {
 interface SeedResult {
   goals: Goal[];
   questSteps: QuestStep[];
+  checkpoints: Checkpoint[];
 }
 
 function seedGoalsAndSteps(stats: Stat[]): SeedResult {
@@ -54,6 +60,7 @@ function seedGoalsAndSteps(stats: Stat[]): SeedResult {
   const now = new Date().toISOString();
   const goals: Goal[] = [];
   const questSteps: QuestStep[] = [];
+  const checkpoints: Checkpoint[] = [];
 
   const make = (
     partial: Omit<Goal, 'id' | 'userId' | 'createdAt' | 'active' | 'track' | 'location' | 'unit'> &
@@ -95,8 +102,28 @@ function seedGoalsAndSteps(stats: Stat[]): SeedResult {
   habit('Read or study 30 minutes', 'Mind', 10, 'easy');
   habit('Review the numbers — revenue and spend', 'Wealth', 10, 'easy');
 
-  // --- Milestones: the big numeric targets ---
-  make({
+  /** A numeric target always ships with its milestone ladder already laid out. */
+  const target = (
+    partial: Parameters<typeof make>[0] & { targetValue: number }
+  ): Goal => {
+    const goal = make(partial);
+    for (const cp of planCheckpoints(partial.targetValue, goal.unit, goal.xpValue)) {
+      checkpoints.push({
+        id: makeId(),
+        goalId: goal.id,
+        userId: LOCAL_USER_ID,
+        label: cp.label,
+        value: cp.value,
+        reached: false,
+        reachedAt: null,
+        xpValue: cp.xpValue,
+      });
+    }
+    return goal;
+  };
+
+  // --- Targets: the big numbers, each with milestones built in ---
+  target({
     title: 'Bank €100,000 in reserves',
     statId: statId('Wealth'),
     type: 'milestone',
@@ -107,7 +134,7 @@ function seedGoalsAndSteps(stats: Stat[]): SeedResult {
     cadence: 'weekly',
     unit: '€',
   });
-  make({
+  target({
     title: 'Reach €20,000 monthly revenue',
     statId: statId('Empire'),
     type: 'milestone',
@@ -118,7 +145,7 @@ function seedGoalsAndSteps(stats: Stat[]): SeedResult {
     cadence: 'weekly',
     unit: '€',
   });
-  make({
+  target({
     title: 'Grow to 50,000 followers',
     statId: statId('Reputation'),
     type: 'milestone',
@@ -128,7 +155,7 @@ function seedGoalsAndSteps(stats: Stat[]): SeedResult {
     currentValue: 0,
     cadence: 'weekly',
   });
-  make({
+  target({
     title: 'Publish 100 pieces of content',
     statId: statId('Content'),
     type: 'milestone',
@@ -167,7 +194,7 @@ function seedGoalsAndSteps(stats: Stat[]): SeedResult {
     });
   }
 
-  return { goals, questSteps };
+  return { goals, questSteps, checkpoints };
 }
 
 function seedUnlockables(): Unlockable[] {
@@ -180,11 +207,13 @@ function seedUnlockables(): Unlockable[] {
 
 function seedDb(): Db {
   const stats = seedStats();
-  const { goals, questSteps } = seedGoalsAndSteps(stats);
+  const { goals, questSteps, checkpoints } = seedGoalsAndSteps(stats);
   return {
     stats,
     goals,
     questSteps,
+    checkpoints,
+    ledger: [],
     goalLogs: [],
     streaks: [],
     wallet: { userId: LOCAL_USER_ID, coins: 0 },
@@ -206,6 +235,8 @@ function load(): Db {
     // Guard against a half-written or older payload leaving the app empty.
     if (!parsed.stats?.length || !parsed.goals) throw new Error('incomplete');
     parsed.questSteps ??= [];
+    parsed.checkpoints ??= [];
+    parsed.ledger ??= [];
     return parsed;
   } catch {
     const db = seedDb();
@@ -273,6 +304,8 @@ export class LocalRepository implements Repository {
   async deleteGoal(id: string): Promise<void> {
     this.db.goals = this.db.goals.filter((g) => g.id !== id);
     this.db.questSteps = this.db.questSteps.filter((s) => s.goalId !== id);
+    this.db.checkpoints = this.db.checkpoints.filter((c) => c.goalId !== id);
+    this.db.ledger = this.db.ledger.filter((l) => l.goalId !== id);
     this.persist();
     return tick(undefined);
   }
@@ -300,6 +333,36 @@ export class LocalRepository implements Repository {
     this.db.questSteps = this.db.questSteps.filter((s) => s.goalId !== goalId);
     this.persist();
     return tick(undefined);
+  }
+
+  async getCheckpoints(): Promise<Checkpoint[]> {
+    return tick([...this.db.checkpoints].sort((a, b) => a.value - b.value));
+  }
+
+  async addCheckpoint(cp: Omit<Checkpoint, 'id' | 'userId'>): Promise<Checkpoint> {
+    const newCp: Checkpoint = { ...cp, id: makeId(), userId: LOCAL_USER_ID };
+    this.db.checkpoints.push(newCp);
+    this.persist();
+    return tick(newCp);
+  }
+
+  async updateCheckpoint(id: string, patch: Partial<Checkpoint>): Promise<Checkpoint> {
+    const cp = this.db.checkpoints.find((c) => c.id === id);
+    if (!cp) throw new Error(`Checkpoint ${id} not found`);
+    Object.assign(cp, patch);
+    this.persist();
+    return tick(cp);
+  }
+
+  async getLedger(): Promise<LedgerEntry[]> {
+    return tick([...this.db.ledger].sort((a, b) => a.at.localeCompare(b.at)));
+  }
+
+  async addLedgerEntry(entry: Omit<LedgerEntry, 'id' | 'userId'>): Promise<LedgerEntry> {
+    const newEntry: LedgerEntry = { ...entry, id: makeId(), userId: LOCAL_USER_ID };
+    this.db.ledger.push(newEntry);
+    this.persist();
+    return tick(newEntry);
   }
 
   async getStreaks(): Promise<Streak[]> {

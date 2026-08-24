@@ -5,33 +5,61 @@ import { useAppStore } from '../store/useAppStore';
 import { HabitRow } from '../components/dashboard/HabitRow';
 import { MilestoneCard } from '../components/dashboard/MilestoneCard';
 import { NextActionRow } from '../components/dashboard/NextActionRow';
+import { StatTile } from '../components/dashboard/StatTile';
+import { TargetDetail } from '../components/targets/TargetDetail';
 import { AddGoalModal } from '../components/goals/AddGoalModal';
 import { ProgressBar } from '../components/common/ProgressBar';
 import { Icon } from '../components/common/Icon';
-import { todayIso } from '../lib/date';
+import { todayIso, toIsoDate } from '../lib/date';
+import { totalXp } from '../lib/derived';
+import type { Goal } from '../types';
+
+/** XP earned per day over the last `days` days, for the header sparkline. */
+function xpTrend(logs: { completedAt: string; xpAwarded: number }[], days = 14): number[] {
+  const buckets = new Map<string, number>();
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    buckets.set(toIsoDate(d), 0);
+  }
+  for (const log of logs) {
+    const key = log.completedAt.slice(0, 10);
+    if (buckets.has(key)) buckets.set(key, (buckets.get(key) ?? 0) + log.xpAwarded);
+  }
+  return Array.from(buckets.values());
+}
 
 export function DashboardPage() {
   const goals = useAppStore((s) => s.goals);
   const stats = useAppStore((s) => s.stats);
   const streaks = useAppStore((s) => s.streaks);
   const questSteps = useAppStore((s) => s.questSteps);
+  const checkpoints = useAppStore((s) => s.checkpoints);
+  const ledger = useAppStore((s) => s.ledger);
   const [showAdd, setShowAdd] = useState(false);
+  const [openTarget, setOpenTarget] = useState<Goal | null>(null);
   const navigate = useNavigate();
 
   const statById = (id: string) => stats.find((s) => s.id === id);
 
   const habits = goals.filter((g) => g.type === 'habit' && g.active);
-  const milestones = goals.filter((g) => g.type === 'milestone' && g.active);
+  const targets = goals.filter((g) => g.type === 'milestone');
 
   const doneToday = habits.filter(
     (h) => streaks.find((s) => s.goalId === h.id)?.lastCompletedDate === todayIso()
   ).length;
   const dayProgress = habits.length === 0 ? 0 : doneToday / habits.length;
 
-  /**
-   * One next step per unfinished quest. A 15-step house build is paralysing as a
-   * list; the only thing that matters today is the next undone step.
-   */
+  const bestStreak = streaks.reduce((m, s) => Math.max(m, s.currentStreak), 0);
+  const stepsDone = questSteps.filter((s) => s.done).length;
+  const milestonesBanked = checkpoints.filter((c) => c.reached).length;
+
+  // Ledger doubles as the XP trend source once movements exist.
+  const trend = useMemo(
+    () => xpTrend(ledger.map((l) => ({ completedAt: l.at, xpAwarded: Math.abs(l.delta) }))),
+    [ledger]
+  );
+
   const nextActions = useMemo(() => {
     return goals
       .filter((g) => g.type === 'quest' && g.active)
@@ -40,7 +68,9 @@ export function DashboardPage() {
           .filter((s) => s.goalId === g.id)
           .sort((a, b) => a.sortOrder - b.sortOrder);
         const next = steps.find((s) => !s.done);
-        return next ? { goal: g, step: next, total: steps.length, done: steps.filter((s) => s.done).length } : null;
+        return next
+          ? { goal: g, step: next, total: steps.length, done: steps.filter((s) => s.done).length }
+          : null;
       })
       .filter((x): x is NonNullable<typeof x> => x !== null)
       .slice(0, 5);
@@ -48,11 +78,23 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-7">
+      <section className="grid grid-cols-2 gap-2">
+        <StatTile
+          label="Total XP"
+          value={totalXp(stats).toLocaleString()}
+          sub="across all stats"
+          trend={trend.some((v) => v > 0) ? trend : undefined}
+        />
+        <StatTile label="Best streak" value={String(bestStreak)} sub="days running" />
+        <StatTile label="Steps done" value={String(stepsDone)} sub="quest progress" />
+        <StatTile label="Milestones" value={String(milestonesBanked)} sub="banked in targets" />
+      </section>
+
       <section className="rounded-xl border border-border bg-surface p-4">
         <div className="mb-2 flex items-end justify-between">
           <div>
             <h2 className="font-heading text-lg font-bold">Today</h2>
-            <p className="text-sm text-text-secondary">
+            <p className="text-sm text-text-secondary tabular-nums">
               {doneToday} of {habits.length} done
             </p>
           </div>
@@ -106,12 +148,20 @@ export function DashboardPage() {
         </section>
       )}
 
-      {milestones.length > 0 && (
+      {targets.length > 0 && (
         <section>
-          <h2 className="mb-3 font-heading text-lg font-bold">Targets</h2>
+          <h2 className="mb-1 font-heading text-lg font-bold">Targets</h2>
+          <p className="mb-3 text-xs text-text-secondary">
+            Tap one to log money in or out and see its milestones.
+          </p>
           <div className="space-y-2">
-            {milestones.map((g) => (
-              <MilestoneCard key={g.id} goal={g} stat={statById(g.statId)} />
+            {targets.map((g) => (
+              <MilestoneCard
+                key={g.id}
+                goal={g}
+                stat={statById(g.statId)}
+                onOpen={setOpenTarget}
+              />
             ))}
           </div>
         </section>
@@ -119,6 +169,12 @@ export function DashboardPage() {
 
       <AnimatePresence>
         {showAdd && <AddGoalModal onClose={() => setShowAdd(false)} />}
+        {openTarget && (
+          <TargetDetail
+            goal={goals.find((g) => g.id === openTarget.id) ?? openTarget}
+            onClose={() => setOpenTarget(null)}
+          />
+        )}
       </AnimatePresence>
     </div>
   );

@@ -1,69 +1,74 @@
-import { useState } from 'react';
+import { useMemo } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { ProgressBar } from '../common/ProgressBar';
+import { Icon } from '../common/Icon';
+import { nextCheckpoint } from '../../lib/target';
 import type { Goal, Stat } from '../../types';
 
-function format(value: number, unit: string | null) {
-  const n = value.toLocaleString();
+function fmt(value: number, unit: string | null) {
+  const n = Math.round(value).toLocaleString();
   if (!unit) return n;
   return unit.length <= 2 ? `${unit}${n}` : `${n} ${unit}`;
 }
 
-export function MilestoneCard({ goal, stat }: { goal: Goal; stat: Stat | undefined }) {
-  const logMilestoneValue = useAppStore((s) => s.logMilestoneValue);
-  const [editing, setEditing] = useState(false);
-  const [value, setValue] = useState(String(goal.currentValue));
+export function MilestoneCard({
+  goal,
+  stat,
+  onOpen,
+}: {
+  goal: Goal;
+  stat: Stat | undefined;
+  onOpen: (goal: Goal) => void;
+}) {
+  const checkpoints = useAppStore((s) => s.checkpoints);
+
+  const ladder = useMemo(
+    () => checkpoints.filter((c) => c.goalId === goal.id).sort((a, b) => a.value - b.value),
+    [checkpoints, goal.id]
+  );
 
   const target = goal.targetValue ?? 1;
   const progress = goal.currentValue / target;
-
-  async function handleSave() {
-    const parsed = Number(value);
-    if (!Number.isNaN(parsed)) {
-      await logMilestoneValue(goal.id, parsed);
-    }
-    setEditing(false);
-  }
+  const next = nextCheckpoint(ladder);
+  const banked = ladder.filter((c) => c.reached).length;
 
   return (
-    <div className="rounded-xl border border-border bg-surface px-4 py-3 transition-colors hover:border-accent/40">
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <span className="min-w-0 truncate font-medium text-text">{goal.title}</span>
-        {stat && <span className="shrink-0 text-xs text-text-secondary">{stat.name}</span>}
-      </div>
-      <div className="mb-2">
-        <ProgressBar progress={progress} />
-      </div>
-      <div className="flex items-center justify-between text-xs text-text-secondary">
-        <span className="tabular-nums">
-          {format(goal.currentValue, goal.unit)} / {format(target, goal.unit)}
-        </span>
-        {editing ? (
-          <div className="flex items-center gap-2">
-            <input
-              autoFocus
-              type="number"
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSave()}
-              className="w-28 rounded border border-border bg-bg px-2 py-1 text-text outline-none focus:border-accent"
-            />
-            <button
-              onClick={handleSave}
-              className="font-medium text-accent transition-transform active:scale-95"
-            >
-              Save
-            </button>
+    <button
+      onClick={() => onOpen(goal)}
+      className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-left transition-colors hover:border-accent/50"
+    >
+      <div className="mb-2 flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <div className="truncate font-medium text-text">{goal.title}</div>
+          {stat && <div className="text-xs text-text-secondary">{stat.name}</div>}
+        </div>
+        <div className="shrink-0 text-right">
+          <div className="font-heading text-lg font-extrabold tabular-nums text-accent">
+            {fmt(goal.currentValue, goal.unit)}
           </div>
+          <div className="text-[10px] text-text-tertiary tabular-nums">
+            of {fmt(target, goal.unit)}
+          </div>
+        </div>
+      </div>
+
+      <ProgressBar progress={progress} />
+
+      <div className="mt-2 flex items-center justify-between text-xs">
+        <span className="flex items-center gap-1.5 text-text-secondary">
+          <Icon name="check" width={12} height={12} />
+          <span className="tabular-nums">
+            {banked}/{ladder.length} milestones
+          </span>
+        </span>
+        {next ? (
+          <span className="text-text-tertiary tabular-nums">
+            {fmt(next.value - goal.currentValue, goal.unit)} to next
+          </span>
         ) : (
-          <button
-            onClick={() => setEditing(true)}
-            className="font-medium text-accent transition-transform active:scale-95"
-          >
-            Update
-          </button>
+          <span className="text-success">complete</span>
         )}
       </div>
-    </div>
+    </button>
   );
 }

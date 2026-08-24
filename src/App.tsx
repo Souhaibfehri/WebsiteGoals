@@ -9,6 +9,7 @@ import { QuestsPage } from './pages/QuestsPage';
 import { CharacterSheetPage } from './pages/CharacterSheetPage';
 import { LevelUpCelebration } from './components/common/LevelUpCelebration';
 import { QuestCompleteToast } from './components/common/QuestCompleteToast';
+import { CheckpointToast } from './components/common/CheckpointToast';
 import { useAppStore } from './store/useAppStore';
 
 function App() {
@@ -41,6 +42,7 @@ function App() {
       </Routes>
       <LevelUpCelebration />
       <QuestCompleteToast />
+      <CheckpointToast />
     </HashRouter>
   );
 }

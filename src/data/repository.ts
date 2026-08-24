@@ -1,7 +1,9 @@
 import type {
+  Checkpoint,
   DayLog,
   Goal,
   GoalLog,
+  LedgerEntry,
   QuestStep,
   Stat,
   Streak,
@@ -28,6 +30,13 @@ export interface Repository {
   addQuestStep(step: Omit<QuestStep, 'id' | 'userId'>): Promise<QuestStep>;
   updateQuestStep(id: string, patch: Partial<QuestStep>): Promise<QuestStep>;
   deleteQuestStepsForGoal(goalId: string): Promise<void>;
+
+  getCheckpoints(): Promise<Checkpoint[]>;
+  addCheckpoint(cp: Omit<Checkpoint, 'id' | 'userId'>): Promise<Checkpoint>;
+  updateCheckpoint(id: string, patch: Partial<Checkpoint>): Promise<Checkpoint>;
+
+  getLedger(): Promise<LedgerEntry[]>;
+  addLedgerEntry(entry: Omit<LedgerEntry, 'id' | 'userId'>): Promise<LedgerEntry>;
 
   getStreaks(): Promise<Streak[]>;
   upsertStreak(streak: Streak): Promise<Streak>;

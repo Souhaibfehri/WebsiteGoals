@@ -50,6 +50,37 @@ export interface Goal {
   unit: string | null; // milestones: '$', 'kg', 'subs'...
 }
 
+/**
+ * A named threshold inside a numeric target — "€25,000 banked" on the way to
+ * €100,000. Reaching one pays XP; falling back below it takes that XP back, so
+ * the sheet always reflects where the money actually is.
+ */
+export interface Checkpoint {
+  id: string;
+  goalId: string;
+  userId: string;
+  label: string;
+  value: number;
+  reached: boolean;
+  reachedAt: string | null;
+  xpValue: number;
+}
+
+/**
+ * One movement on a target: money put in, or money taken back out. Withdrawals
+ * are first-class rather than an edit, because spending the house fund is a real
+ * event with a date and a reason, and the chart should show the dip.
+ */
+export interface LedgerEntry {
+  id: string;
+  goalId: string;
+  userId: string;
+  delta: number; // positive = contribution, negative = setback
+  note: string | null;
+  at: string;
+  balanceAfter: number;
+}
+
 /** An ordered checklist item inside a quest. Awards XP when checked. */
 export interface QuestStep {
   id: string;

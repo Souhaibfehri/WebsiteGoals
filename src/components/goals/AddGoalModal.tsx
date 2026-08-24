@@ -2,7 +2,14 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAppStore } from '../../store/useAppStore';
 import { QUEST_TEMPLATES } from '../../data/templates';
-import { DIFFICULTY_XP, TRACKS, type Difficulty, type GoalType, type Track } from '../../types';
+import {
+  DIFFICULTY_XP,
+  TRACKS,
+  type Difficulty,
+  type GoalType,
+  type Track,
+  type TrackingMode,
+} from '../../types';
 import { Icon } from '../common/Icon';
 
 const TYPES: { value: GoalType; label: string; hint: string }[] = [
@@ -29,6 +36,11 @@ export function AddGoalModal({
   const [unit, setUnit] = useState('');
   const [track, setTrack] = useState<Track>('Empire');
   const [location, setLocation] = useState('');
+  const [trackingMode, setTrackingMode] = useState<TrackingMode>('binary');
+  const [dailyTarget, setDailyTarget] = useState('1');
+  const [unitLabel, setUnitLabel] = useState('');
+  const [habitCadence, setHabitCadence] = useState<'daily' | 'weekly'>('daily');
+  const [weeklyTarget, setWeeklyTarget] = useState('3');
   const [steps, setSteps] = useState<string[]>([]);
   const [stepDraft, setStepDraft] = useState('');
 
@@ -68,11 +80,15 @@ export function AddGoalModal({
           type === 'quest' ? 300 : type === 'milestone' ? 800 : DIFFICULTY_XP[difficulty],
         targetValue: type === 'milestone' ? Number(targetValue) : null,
         currentValue: 0,
-        cadence: type === 'habit' ? 'daily' : type === 'milestone' ? 'weekly' : null,
+        cadence: type === 'habit' ? habitCadence : type === 'milestone' ? 'weekly' : null,
         active: true,
         track: type === 'quest' ? track : null,
         location: type === 'quest' && location.trim() ? location.trim() : null,
         unit: type === 'milestone' && unit.trim() ? unit.trim() : null,
+        trackingMode,
+        dailyTarget: trackingMode === 'binary' ? 1 : Math.max(1, Number(dailyTarget) || 1),
+        unitLabel: trackingMode === 'count' && unitLabel.trim() ? unitLabel.trim() : null,
+        weeklyTarget: type === 'habit' && habitCadence === 'weekly' ? Number(weeklyTarget) || 3 : null,
       },
       type === 'quest' ? steps : undefined
     );
@@ -261,6 +277,107 @@ export function AddGoalModal({
 
         {type === 'habit' && (
           <>
+            <label className="mb-1 block text-sm text-text-secondary">How do you track it?</label>
+            <div className="mb-4 grid grid-cols-3 gap-2">
+              {(
+                [
+                  { v: 'binary', l: 'Yes / no', h: 'Did it' },
+                  { v: 'count', l: 'Count', h: 'e.g. 8 glasses' },
+                  { v: 'duration', l: 'Minutes', h: 'e.g. 30 min' },
+                ] as { v: TrackingMode; l: string; h: string }[]
+              ).map((t) => (
+                <button
+                  key={t.v}
+                  type="button"
+                  onClick={() => {
+                    setTrackingMode(t.v);
+                    setDailyTarget(t.v === 'binary' ? '1' : t.v === 'duration' ? '30' : '8');
+                  }}
+                  className={`rounded-xl border-2 px-2 py-2 text-left transition-transform active:scale-95 ${
+                    trackingMode === t.v
+                      ? 'border-[color:var(--accent)] bg-[color:var(--accent)]/12 text-text'
+                      : 'border-border text-text-secondary'
+                  }`}
+                >
+                  <div className="text-xs font-extrabold">{t.l}</div>
+                  <div className="text-[10px] leading-tight text-text-tertiary">{t.h}</div>
+                </button>
+              ))}
+            </div>
+
+            {trackingMode !== 'binary' && (
+              <div className="mb-4 flex gap-2">
+                <div className="flex-1">
+                  <label className="mb-1 block text-sm text-text-secondary">
+                    Daily target{trackingMode === 'duration' ? ' (minutes)' : ''}
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={dailyTarget}
+                    onChange={(e) => setDailyTarget(e.target.value)}
+                    className="w-full rounded-xl border-2 border-border bg-white px-3 py-2.5 font-bold outline-none focus:border-[color:var(--empire)]"
+                  />
+                </div>
+                {trackingMode === 'count' && (
+                  <div className="w-32">
+                    <label className="mb-1 block text-sm text-text-secondary">Unit</label>
+                    <input
+                      value={unitLabel}
+                      onChange={(e) => setUnitLabel(e.target.value)}
+                      placeholder="glasses"
+                      className="w-full rounded-xl border-2 border-border bg-white px-3 py-2.5 font-bold outline-none focus:border-[color:var(--empire)]"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
+            <label className="mb-1 block text-sm text-text-secondary">How often?</label>
+            <div className="mb-4 grid grid-cols-2 gap-2">
+              {(
+                [
+                  { v: 'daily', l: 'Every day' },
+                  { v: 'weekly', l: 'Some days a week' },
+                ] as { v: 'daily' | 'weekly'; l: string }[]
+              ).map((c) => (
+                <button
+                  key={c.v}
+                  type="button"
+                  onClick={() => setHabitCadence(c.v)}
+                  className={`rounded-xl border-2 px-3 py-2.5 text-sm font-extrabold transition-transform active:scale-95 ${
+                    habitCadence === c.v
+                      ? 'border-[color:var(--accent)] bg-[color:var(--accent)]/12 text-text'
+                      : 'border-border text-text-secondary'
+                  }`}
+                >
+                  {c.l}
+                </button>
+              ))}
+            </div>
+
+            {habitCadence === 'weekly' && (
+              <>
+                <label className="mb-1 block text-sm text-text-secondary">Times per week</label>
+                <div className="mb-4 grid grid-cols-6 gap-1.5">
+                  {[1, 2, 3, 4, 5, 6].map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => setWeeklyTarget(String(n))}
+                      className={`rounded-xl border-2 py-2 text-sm font-extrabold transition-transform active:scale-95 ${
+                        Number(weeklyTarget) === n
+                          ? 'border-[color:var(--accent)] bg-[color:var(--accent)]/12 text-text'
+                          : 'border-border text-text-secondary'
+                      }`}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+
             <label className="mb-1 block text-sm text-text-secondary">Difficulty</label>
             <div className="mb-4 grid grid-cols-4 gap-2">
               {(['trivial', 'easy', 'medium', 'hard'] as Difficulty[]).map((d) => (

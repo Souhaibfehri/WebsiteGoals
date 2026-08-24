@@ -4,6 +4,7 @@ import { Icon } from '../components/common/Icon';
 import { ACHIEVEMENTS, type AchievementSnapshot } from '../lib/achievements';
 import { characterLevel } from '../lib/derived';
 import { rankFor, nextRank, RANKS } from '../lib/rank';
+import { MascotPicker } from '../components/common/MascotPicker';
 
 export function RewardsPage() {
   const stats = useAppStore((s) => s.stats);
@@ -80,6 +81,14 @@ export function RewardsPage() {
             </span>
           ))}
         </div>
+      </section>
+
+      <section>
+        <h2 className="mb-1 font-heading text-xl font-extrabold">Companion</h2>
+        <p className="mb-3 text-xs font-bold text-text-secondary">
+          Pick who keeps you company on the dashboard.
+        </p>
+        <MascotPicker />
       </section>
 
       <section>

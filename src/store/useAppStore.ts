@@ -1,15 +1,18 @@
 import { create } from 'zustand';
 import { repository } from '../data/localRepository';
 import { todayIso, daysBetween } from '../lib/date';
-import { coinsForXp, levelFromXp, xpForCompletion } from '../lib/xp';
+import { coinsForXp, levelFromXp } from '../lib/xp';
 import { questToggleXp } from '../lib/quest';
 import { applyTargetDelta } from '../lib/target';
 import { advanceStreak, streakMilestoneReached } from '../lib/streak';
+import { applyHabitDelta, isDueToday } from '../lib/habit';
+import { isSameIsoWeek } from '../lib/date';
 import { newlyUnlocked, type AchievementSnapshot } from '../lib/achievements';
 import { characterLevel } from '../lib/derived';
 import type {
   Checkpoint,
   DayRecord,
+  HabitEntry,
   StreakState,
   UnlockedAchievement,
   Goal,
@@ -18,6 +21,7 @@ import type {
   Stat,
   StatName,
   Streak,
+  Profile,
   Wallet,
 } from '../types';
 
@@ -58,10 +62,12 @@ interface AppState {
   questSteps: QuestStep[];
   checkpoints: Checkpoint[];
   ledger: LedgerEntry[];
+  habitEntries: HabitEntry[];
   dayRecords: DayRecord[];
   streakState: StreakState;
   achievements: UnlockedAchievement[];
   streaks: Streak[];
+  profile: Profile;
   wallet: Wallet;
   levelUpQueue: LevelUpEvent[];
   questDone: QuestDoneEvent | null;
@@ -70,7 +76,8 @@ interface AppState {
   achievementHit: AchievementEvent | null;
 
   init: () => Promise<void>;
-  completeHabit: (goalId: string) => Promise<void>;
+  /** Delta-based so a mis-tap is undone by tapping back, never a dead end. */
+  logHabit: (goalId: string, delta: number) => Promise<void>;
   logMilestoneValue: (goalId: string, newValue: number) => Promise<void>;
   recordMovement: (goalId: string, delta: number, note?: string) => Promise<void>;
   toggleQuestStep: (stepId: string) => Promise<void>;
@@ -85,11 +92,12 @@ interface AppState {
   dismissStreak: () => void;
   dismissAchievement: () => void;
   buyStreakFreeze: () => Promise<void>;
+  chooseMascot: (mascot: string) => Promise<void>;
   resetAll: () => Promise<void>;
 }
 
 async function refresh(set: (partial: Partial<AppState>) => void) {
-  const [stats, goals, questSteps, checkpoints, ledger, streaks, wallet, dayRecords, streakState, achievements] =
+  const [stats, goals, questSteps, checkpoints, ledger, streaks, wallet, profile, habitEntries, dayRecords, streakState, achievements] =
     await Promise.all([
       repository.getStats(),
       repository.getGoals(),
@@ -98,6 +106,8 @@ async function refresh(set: (partial: Partial<AppState>) => void) {
       repository.getLedger(),
       repository.getStreaks(),
       repository.getWallet(),
+      repository.getProfile(),
+      repository.getHabitEntries(),
       repository.getDayRecords(),
       repository.getStreakState(),
       repository.getAchievements(),
@@ -110,10 +120,34 @@ async function refresh(set: (partial: Partial<AppState>) => void) {
     ledger,
     streaks,
     wallet,
+    profile,
+    habitEntries,
     dayRecords,
     streakState,
     achievements,
   });
+}
+
+/** Completions of a habit inside the current week, excluding today. */
+function completionsThisWeek(entries: HabitEntry[], goalId: string, today: string): number {
+  return entries.filter(
+    (e) => e.goalId === goalId && e.completed && e.date !== today && isSameIsoWeek(e.date, today)
+  ).length;
+}
+
+/** Habits still wanting attention today, which is what the daily goal counts. */
+export function dueHabits(goals: Goal[], entries: HabitEntry[], today: string): Goal[] {
+  return goals
+    .filter((g) => g.type === 'habit' && g.active)
+    .filter((g) => {
+      const entry = entries.find((e) => e.goalId === g.id && e.date === today);
+      return isDueToday({
+        cadence: g.cadence === 'weekly' ? 'weekly' : 'daily',
+        weeklyTarget: g.weeklyTarget,
+        completionsThisWeek: completionsThisWeek(entries, g.id, today),
+        doneToday: entry?.completed ?? false,
+      });
+    });
 }
 
 /**
@@ -150,15 +184,37 @@ async function syncDay(
   get: () => AppState,
   xpJustEarned: number
 ): Promise<{ streakEvent: StreakEvent | null; achievementIds: string[] }> {
-  const { goals, streaks, stats, questSteps, checkpoints, dayRecords, streakState, achievements } =
-    get();
+  const {
+    goals,
+    streaks,
+    stats,
+    questSteps,
+    checkpoints,
+    habitEntries,
+    dayRecords,
+    streakState,
+    achievements,
+  } = get();
   const today = todayIso();
 
-  const habits = goals.filter((g) => g.type === 'habit' && g.active);
-  const completed = habits.filter(
-    (h) => streaks.find((s) => s.goalId === h.id)?.lastCompletedDate === today
+  /*
+   * Only habits actually scheduled for today count toward the day's goal, so a
+   * weekly habit that has already filled its quota does not hold the day open.
+   */
+  const scheduled = goals.filter((g) => g.type === 'habit' && g.active).filter((g) => {
+    const entry = habitEntries.find((e) => e.goalId === g.id && e.date === today);
+    if (entry?.completed) return true;
+    return isDueToday({
+      cadence: g.cadence === 'weekly' ? 'weekly' : 'daily',
+      weeklyTarget: g.weeklyTarget,
+      completionsThisWeek: completionsThisWeek(habitEntries, g.id, today),
+      doneToday: false,
+    });
+  });
+  const completed = scheduled.filter(
+    (h) => habitEntries.find((e) => e.goalId === h.id && e.date === today)?.completed
   ).length;
-  const total = habits.length;
+  const total = scheduled.length;
   const goalMet = total > 0 && completed >= total;
 
   const existingToday = dayRecords.find((d) => d.date === today);
@@ -247,10 +303,12 @@ export const useAppStore = create<AppState>((set, get) => ({
   questSteps: [],
   checkpoints: [],
   ledger: [],
+  habitEntries: [],
   dayRecords: [],
   streakState: { userId: 'local-user', current: 0, best: 0, lastGoalDate: null, freezes: 0 },
   achievements: [],
   streaks: [],
+  profile: { userId: 'local-user', mascot: 'lion', onboarded: false },
   wallet: { userId: 'local-user', coins: 0 },
   levelUpQueue: [],
   questDone: null,
@@ -264,33 +322,73 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ loading: false });
   },
 
-  completeHabit: async (goalId: string) => {
-    const { goals, streaks, stats, wallet } = get();
+  logHabit: async (goalId: string, delta: number) => {
+    const { goals, habitEntries, streaks, stats, wallet } = get();
     const goal = goals.find((g) => g.id === goalId);
-    if (!goal) return;
+    if (!goal || goal.type !== 'habit') return;
 
     const today = todayIso();
-    const existing = streaks.find((s) => s.goalId === goalId);
-    if (existing?.lastCompletedDate === today) return; // already logged today, 1-tap is idempotent
+    const entry = habitEntries.find((e) => e.goalId === goalId && e.date === today);
+    const currentValue = entry?.value ?? 0;
 
-    const daysSinceLast = existing?.lastCompletedDate ? daysBetween(existing.lastCompletedDate, today) : null;
-    const newStreakCount = daysSinceLast === 1 ? existing!.currentStreak + 1 : 1;
-    const bestStreak = Math.max(existing?.bestStreak ?? 0, newStreakCount);
+    const streak = streaks.find((s) => s.goalId === goalId);
+    // The streak in force for today's payout, so undo refunds the same amount.
+    const streakDays =
+      streak?.lastCompletedDate === today
+        ? streak.currentStreak
+        : (streak?.currentStreak ?? 0) + 1;
 
-    const xpAwarded = xpForCompletion(goal.xpValue, newStreakCount);
-
-    await repository.upsertStreak({
-      goalId,
-      currentStreak: newStreakCount,
-      bestStreak,
-      lastCompletedDate: today,
+    const result = applyHabitDelta({
+      currentValue,
+      delta,
+      target: goal.dailyTarget,
+      xpValue: goal.xpValue,
+      multiplier: 1 + Math.min(streakDays * 0.02, 0.5),
     });
-    await repository.addGoalLog({ goalId, completedAt: new Date().toISOString(), valueLogged: null, xpAwarded });
 
-    const levelUp = await awardXp(goal.statId, xpAwarded, stats, wallet);
+    if (result.newValue === currentValue) return;
+
+    await repository.upsertHabitEntry({
+      goalId,
+      date: today,
+      value: result.newValue,
+      completed: result.isComplete,
+    });
+
+    // The per-habit streak follows the day's completion, in both directions.
+    if (!result.wasComplete && result.isComplete) {
+      const daysSince = streak?.lastCompletedDate
+        ? daysBetween(streak.lastCompletedDate, today)
+        : null;
+      const nextCount = daysSince === 1 ? (streak?.currentStreak ?? 0) + 1 : 1;
+      await repository.upsertStreak({
+        goalId,
+        currentStreak: nextCount,
+        bestStreak: Math.max(streak?.bestStreak ?? 0, nextCount),
+        lastCompletedDate: today,
+      });
+    } else if (result.wasComplete && !result.isComplete && streak?.lastCompletedDate === today) {
+      await repository.upsertStreak({
+        goalId,
+        currentStreak: Math.max(0, streak.currentStreak - 1),
+        bestStreak: streak.bestStreak,
+        lastCompletedDate: null,
+      });
+    }
+
+    let levelUp: LevelUpEvent | null = null;
+    if (result.xpDelta !== 0) {
+      await repository.addGoalLog({
+        goalId,
+        completedAt: new Date().toISOString(),
+        valueLogged: result.newValue,
+        xpAwarded: result.xpDelta,
+      });
+      levelUp = await awardXp(goal.statId, result.xpDelta, stats, wallet);
+    }
 
     await refresh(set);
-    const { streakEvent, achievementIds } = await syncDay(get, xpAwarded);
+    const { streakEvent, achievementIds } = await syncDay(get, Math.max(0, result.xpDelta));
     await refresh(set);
 
     if (levelUp) set({ levelUpQueue: [...get().levelUpQueue, levelUp] });
@@ -481,6 +579,10 @@ export const useAppStore = create<AppState>((set, get) => ({
       track: source.track,
       location: location.trim() || null,
       unit: null,
+      trackingMode: source.trackingMode,
+      dailyTarget: source.dailyTarget,
+      unitLabel: source.unitLabel,
+      weeklyTarget: source.weeklyTarget,
     });
 
     const sourceSteps = questSteps
@@ -530,6 +632,11 @@ export const useAppStore = create<AppState>((set, get) => ({
   dismissQuestDone: () => set({ questDone: null }),
 
   dismissCheckpoint: () => set({ checkpointHit: null }),
+
+  chooseMascot: async (mascot: string) => {
+    await repository.saveProfile({ mascot, onboarded: true });
+    await refresh(set);
+  },
 
   dismissStreak: () => set({ streakHit: null }),
 

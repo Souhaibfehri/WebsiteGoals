@@ -13,6 +13,7 @@ import { LevelUpCelebration } from './components/common/LevelUpCelebration';
 import { QuestCompleteToast } from './components/common/QuestCompleteToast';
 import { CheckpointToast } from './components/common/CheckpointToast';
 import { StreakCelebration, AchievementToast } from './components/common/StreakCelebration';
+import { MascotOnboarding } from './components/common/MascotPicker';
 import { useAppStore } from './store/useAppStore';
 
 function App() {
@@ -50,6 +51,7 @@ function App() {
       <CheckpointToast />
       <StreakCelebration />
       <AchievementToast />
+      <MascotOnboarding />
     </HashRouter>
   );
 }

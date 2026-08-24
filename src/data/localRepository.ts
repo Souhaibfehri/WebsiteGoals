@@ -5,6 +5,7 @@ import type {
   Checkpoint,
   DayLog,
   DayRecord,
+  HabitEntry,
   StreakState,
   UnlockedAchievement,
   Goal,
@@ -16,6 +17,7 @@ import type {
   Streak,
   UserUnlock,
   Unlockable,
+  Profile,
   Wallet,
 } from '../types';
 import { STAT_ICON, STAT_ORDER } from '../types';
@@ -24,7 +26,7 @@ import type { Repository } from './repository';
 import { LOCAL_USER_ID } from './localUser';
 import { readItem, writeItem } from './safeStorage';
 
-const STORAGE_KEY = 'lifeos.db.v5';
+const STORAGE_KEY = 'lifeos.db.v7';
 
 interface Db {
   stats: Stat[];
@@ -33,10 +35,12 @@ interface Db {
   checkpoints: Checkpoint[];
   ledger: LedgerEntry[];
   goalLogs: GoalLog[];
+  habitEntries: HabitEntry[];
   dayRecords: DayRecord[];
   streakState: StreakState;
   achievements: UnlockedAchievement[];
   streaks: Streak[];
+  profile: Profile;
   wallet: Wallet;
   dayLogs: DayLog[];
   unlockables: Unlockable[];
@@ -68,10 +72,25 @@ function seedGoalsAndSteps(stats: Stat[]): SeedResult {
   const questSteps: QuestStep[] = [];
   const checkpoints: Checkpoint[] = [];
 
-  const make = (
-    partial: Omit<Goal, 'id' | 'userId' | 'createdAt' | 'active' | 'track' | 'location' | 'unit'> &
-      Partial<Pick<Goal, 'track' | 'location' | 'unit'>>
-  ): Goal => {
+  type SeedGoal = Omit<
+    Goal,
+    | 'id'
+    | 'userId'
+    | 'createdAt'
+    | 'active'
+    | 'track'
+    | 'location'
+    | 'unit'
+    | 'trackingMode'
+    | 'dailyTarget'
+    | 'unitLabel'
+    | 'weeklyTarget'
+  > &
+    Partial<
+      Pick<Goal, 'track' | 'location' | 'unit' | 'trackingMode' | 'dailyTarget' | 'unitLabel' | 'weeklyTarget'>
+    >;
+
+  const make = (partial: SeedGoal): Goal => {
     const goal: Goal = {
       id: makeId(),
       userId: LOCAL_USER_ID,
@@ -80,6 +99,10 @@ function seedGoalsAndSteps(stats: Stat[]): SeedResult {
       track: null,
       location: null,
       unit: null,
+      trackingMode: 'binary',
+      dailyTarget: 1,
+      unitLabel: null,
+      weeklyTarget: null,
       ...partial,
     };
     goals.push(goal);
@@ -87,7 +110,13 @@ function seedGoalsAndSteps(stats: Stat[]): SeedResult {
   };
 
   // --- Daily habits, one per domain that benefits from a daily rep ---
-  const habit = (title: string, stat: StatName, xp: number, difficulty: Goal['difficulty']) =>
+  const habit = (
+    title: string,
+    stat: StatName,
+    xp: number,
+    difficulty: Goal['difficulty'],
+    opts: Partial<Pick<Goal, 'trackingMode' | 'dailyTarget' | 'unitLabel' | 'cadence' | 'weeklyTarget'>> = {}
+  ) =>
     make({
       title,
       statId: statId(stat),
@@ -96,17 +125,23 @@ function seedGoalsAndSteps(stats: Stat[]): SeedResult {
       xpValue: xp,
       targetValue: null,
       currentValue: 0,
-      cadence: 'daily',
+      cadence: opts.cadence ?? 'daily',
+      trackingMode: opts.trackingMode ?? 'binary',
+      dailyTarget: opts.dailyTarget ?? 1,
+      unitLabel: opts.unitLabel ?? null,
+      weeklyTarget: opts.weeklyTarget ?? null,
     });
 
-  habit('Train — gym or run', 'Body', 25, 'medium');
-  habit('Brush teeth (morning + night)', 'Body', 5, 'trivial');
+  // A mix of shapes on purpose: not everything worth tracking is a daily yes/no.
+  habit('Train — gym or run', 'Body', 25, 'medium', { cadence: 'weekly', weeklyTarget: 4 });
+  habit('Brush teeth', 'Body', 5, 'trivial', { trackingMode: 'count', dailyTarget: 2, unitLabel: 'times' });
+  habit('Drink water', 'Body', 10, 'easy', { trackingMode: 'count', dailyTarget: 8, unitLabel: 'glasses' });
   habit('7+ hours sleep', 'Body', 10, 'easy');
-  habit('One deep work block, no phone', 'Work', 25, 'medium');
-  habit('Publish or film one piece of content', 'Content', 25, 'medium');
-  habit('Reach out to one new contact', 'Reputation', 10, 'easy');
-  habit('Read or study 30 minutes', 'Mind', 10, 'easy');
-  habit('Review the numbers — revenue and spend', 'Wealth', 10, 'easy');
+  habit('Deep work, no phone', 'Work', 25, 'medium', { trackingMode: 'duration', dailyTarget: 90 });
+  habit('Publish or film content', 'Content', 25, 'medium', { cadence: 'weekly', weeklyTarget: 3 });
+  habit('Reach out to a new contact', 'Reputation', 10, 'easy');
+  habit('Read or study', 'Mind', 10, 'easy', { trackingMode: 'duration', dailyTarget: 30 });
+  habit('Review the numbers', 'Wealth', 10, 'easy');
 
   /** A numeric target always ships with its milestone ladder already laid out. */
   const target = (
@@ -221,10 +256,12 @@ function seedDb(): Db {
     checkpoints,
     ledger: [],
     goalLogs: [],
+    habitEntries: [],
     dayRecords: [],
     streakState: { userId: LOCAL_USER_ID, current: 0, best: 0, lastGoalDate: null, freezes: 0 },
     achievements: [],
     streaks: [],
+    profile: { userId: LOCAL_USER_ID, mascot: 'lion', onboarded: false },
     wallet: { userId: LOCAL_USER_ID, coins: 0 },
     dayLogs: [],
     unlockables: seedUnlockables(),
@@ -246,6 +283,8 @@ function load(): Db {
     parsed.questSteps ??= [];
     parsed.checkpoints ??= [];
     parsed.ledger ??= [];
+    parsed.habitEntries ??= [];
+    parsed.profile ??= { userId: LOCAL_USER_ID, mascot: 'lion', onboarded: false };
     parsed.dayRecords ??= [];
     parsed.achievements ??= [];
     parsed.streakState ??= {
@@ -270,6 +309,16 @@ function save(db: Db): void {
 /** Small artificial async boundary so call sites are already Promise-shaped for a future async backend. */
 function tick<T>(value: T): Promise<T> {
   return Promise.resolve(value);
+}
+
+/**
+ * Singletons must leave the repository as fresh objects. Handing out the live
+ * internal reference means a mutation-then-read returns the identical object,
+ * the store sets state to the same reference, and React correctly concludes
+ * nothing changed — so the screen silently fails to update.
+ */
+function snapshot<T>(value: T): Promise<T> {
+  return Promise.resolve({ ...value });
 }
 
 export class LocalRepository implements Repository {
@@ -324,6 +373,7 @@ export class LocalRepository implements Repository {
     this.db.questSteps = this.db.questSteps.filter((s) => s.goalId !== id);
     this.db.checkpoints = this.db.checkpoints.filter((c) => c.goalId !== id);
     this.db.ledger = this.db.ledger.filter((l) => l.goalId !== id);
+    this.db.habitEntries = this.db.habitEntries.filter((e) => e.goalId !== id);
     this.persist();
     return tick(undefined);
   }
@@ -383,6 +433,25 @@ export class LocalRepository implements Repository {
     return tick(newEntry);
   }
 
+  async getHabitEntries(): Promise<HabitEntry[]> {
+    return tick([...this.db.habitEntries]);
+  }
+
+  async upsertHabitEntry(entry: Omit<HabitEntry, 'id' | 'userId'>): Promise<HabitEntry> {
+    const existing = this.db.habitEntries.find(
+      (e) => e.goalId === entry.goalId && e.date === entry.date
+    );
+    if (existing) {
+      Object.assign(existing, entry);
+      this.persist();
+      return tick(existing);
+    }
+    const created: HabitEntry = { ...entry, id: makeId(), userId: LOCAL_USER_ID };
+    this.db.habitEntries.push(created);
+    this.persist();
+    return tick(created);
+  }
+
   async getDayRecords(): Promise<DayRecord[]> {
     return tick([...this.db.dayRecords].sort((a, b) => a.date.localeCompare(b.date)));
   }
@@ -401,13 +470,13 @@ export class LocalRepository implements Repository {
   }
 
   async getStreakState(): Promise<StreakState> {
-    return tick(this.db.streakState);
+    return snapshot(this.db.streakState);
   }
 
   async saveStreakState(patch: Partial<Omit<StreakState, 'userId'>>): Promise<StreakState> {
     Object.assign(this.db.streakState, patch);
     this.persist();
-    return tick(this.db.streakState);
+    return snapshot(this.db.streakState);
   }
 
   async getAchievements(): Promise<UnlockedAchievement[]> {
@@ -451,14 +520,24 @@ export class LocalRepository implements Repository {
     return tick(logs);
   }
 
+  async getProfile(): Promise<Profile> {
+    return snapshot(this.db.profile);
+  }
+
+  async saveProfile(patch: Partial<Omit<Profile, 'userId'>>): Promise<Profile> {
+    Object.assign(this.db.profile, patch);
+    this.persist();
+    return snapshot(this.db.profile);
+  }
+
   async getWallet(): Promise<Wallet> {
-    return tick(this.db.wallet);
+    return snapshot(this.db.wallet);
   }
 
   async updateWallet(coins: number): Promise<Wallet> {
     this.db.wallet.coins = Math.max(0, coins);
     this.persist();
-    return tick(this.db.wallet);
+    return snapshot(this.db.wallet);
   }
 
   async getDayLogs(): Promise<DayLog[]> {

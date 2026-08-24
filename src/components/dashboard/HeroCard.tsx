@@ -1,6 +1,6 @@
 import { motion, useReducedMotion } from 'framer-motion';
 import { useAppStore } from '../../store/useAppStore';
-import { Mascot } from '../art/Mascot';
+import { Mascot, type MascotId } from '../art/Mascot';
 import { Icon } from '../common/Icon';
 import { characterLevel } from '../../lib/derived';
 import { WeekStrip } from '../calendar/WeekStrip';
@@ -27,6 +27,7 @@ export function HeroCard({
 }) {
   const stats = useAppStore((s) => s.stats);
   const dayRecords = useAppStore((s) => s.dayRecords);
+  const profile = useAppStore((s) => s.profile);
   const reduceMotion = useReducedMotion();
   const level = characterLevel(stats);
   const left = Math.max(0, totalToday - doneToday);
@@ -44,7 +45,7 @@ export function HeroCard({
           animate={reduceMotion ? {} : allDone ? { rotate: [0, -6, 6, 0] } : { y: [0, -5, 0] }}
           transition={{ duration: allDone ? 0.9 : 2.6, repeat: reduceMotion ? 0 : Infinity, ease: 'easeInOut' }}
         >
-          <Mascot size={96} mood={allDone ? 'cheer' : 'happy'} />
+          <Mascot size={96} mood={allDone ? 'cheer' : 'happy'} id={profile.mascot as MascotId} />
         </motion.div>
 
         <div className="min-w-0 flex-1">

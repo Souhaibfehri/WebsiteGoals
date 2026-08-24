@@ -26,6 +26,9 @@ export type Difficulty = 'trivial' | 'easy' | 'medium' | 'hard' | 'milestone';
 
 export type Cadence = 'daily' | 'weekly' | null;
 
+import type { TrackingMode } from './lib/habit';
+export type { TrackingMode };
+
 /** Top-level grouping for quests — a "campaign" the quest belongs to. */
 export type Track = 'Property' | 'Empire' | 'Work' | 'Health' | 'Reputation' | 'Content' | 'Personal';
 
@@ -48,6 +51,24 @@ export interface Goal {
   track: Track | null;
   location: string | null;
   unit: string | null; // milestones: '$', 'kg', 'subs'...
+  /** Habits: how a day's progress is measured. */
+  trackingMode: TrackingMode;
+  /** Habits: value needed for the day to count (1 for binary). */
+  dailyTarget: number;
+  /** Habits: what the number means — 'glasses', 'pages', 'min'. */
+  unitLabel: string | null;
+  /** Habits on a weekly cadence: how many days a week it should happen. */
+  weeklyTarget: number | null;
+}
+
+/** One habit's progress on one day — the unit that makes undo possible. */
+export interface HabitEntry {
+  id: string;
+  goalId: string;
+  userId: string;
+  date: string; // yyyy-mm-dd
+  value: number;
+  completed: boolean;
 }
 
 /**
@@ -159,6 +180,13 @@ export interface UnlockedAchievement {
   userId: string;
   achievementId: string;
   unlockedAt: string;
+}
+
+export interface Profile {
+  userId: string;
+  mascot: string;
+  /** False until the companion has been chosen once. */
+  onboarded: boolean;
 }
 
 export interface Wallet {

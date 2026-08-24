@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { useAppStore } from '../store/useAppStore';
+import { useAppStore, dueHabits } from '../store/useAppStore';
 import { HabitRow } from '../components/dashboard/HabitRow';
 import { MilestoneCard } from '../components/dashboard/MilestoneCard';
 import { NextActionRow } from '../components/dashboard/NextActionRow';
@@ -32,7 +32,6 @@ function xpTrend(logs: { completedAt: string; xpAwarded: number }[], days = 14):
 export function DashboardPage() {
   const goals = useAppStore((s) => s.goals);
   const stats = useAppStore((s) => s.stats);
-  const streaks = useAppStore((s) => s.streaks);
   const questSteps = useAppStore((s) => s.questSteps);
   const checkpoints = useAppStore((s) => s.checkpoints);
   const ledger = useAppStore((s) => s.ledger);
@@ -51,11 +50,24 @@ export function DashboardPage() {
   const statRank = (id: string) => stats.find((s) => s.id === id)?.sortOrder ?? 99;
   const byStat = (a: Goal, b: Goal) => statRank(a.statId) - statRank(b.statId);
 
-  const habits = goals.filter((g) => g.type === 'habit' && g.active).sort(byStat);
+  const habitEntries = useAppStore((s) => s.habitEntries);
+  const today = todayIso();
+  /*
+   * Today's list is what is actually scheduled: a weekly habit disappears once
+   * its quota is filled, plus anything already done so it can still be undone.
+   */
+  const due = dueHabits(goals, habitEntries, today);
+  const doneTodayGoals = goals.filter(
+    (g) =>
+      g.type === 'habit' &&
+      g.active &&
+      habitEntries.find((e) => e.goalId === g.id && e.date === today)?.completed
+  );
+  const habits = [...new Set([...due, ...doneTodayGoals])].sort(byStat);
   const targets = goals.filter((g) => g.type === 'milestone').sort(byStat);
 
   const doneToday = habits.filter(
-    (h) => streaks.find((s) => s.goalId === h.id)?.lastCompletedDate === todayIso()
+    (h) => habitEntries.find((e) => e.goalId === h.id && e.date === today)?.completed
   ).length;
 
   const streakState = useAppStore((s) => s.streakState);
